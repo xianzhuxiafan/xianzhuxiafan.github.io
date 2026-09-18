@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>仙猪是帅哥</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#1a0f2e;color:#fff;font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",Arial,sans-serif;overflow:hidden;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}
+h1{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#wrap{position:relative;width:480px;height:760px}
+canvas{display:block;width:100%;height:100%;touch-action:none;border-radius:16px}
+#hud{position:absolute;top:12px;left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+#scorebar{width:78%;height:18px;background:rgba(0,0,0,.35);border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.25)}
+#scorefill{height:100%;width:0;background:linear-gradient(90deg,#ffd76a,#ff8a5c,#ff5ca8);border-radius:999px;transition:width .15s}
+#sc{position:absolute;top:34px;left:0;right:0;text-align:center;font-weight:900;font-size:20px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+#overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(20,8,40,.68);border-radius:16px;text-align:center;padding:24px;z-index:5}
+#overlay.hidden{display:none}
+#overlay h2{font-size:30px;color:#ffd76a;text-shadow:0 2px 12px rgba(255,160,60,.7)}
+#overlay p{font-size:15px;line-height:1.9;color:#eadff8;max-width:340px}
+#bigbtn{background:linear-gradient(135deg,#ffb454,#ff5ca8);color:#2a0015;font-weight:900;font-size:19px;border:0;border-radius:999px;padding:13px 36px;cursor:pointer;box-shadow:0 8px 26px rgba(255,110,160,.45)}
+#bigbtn:active{transform:scale(.95)}
+#msg{position:absolute;top:40%;left:0;right:0;text-align:center;font-size:34px;font-weight:900;pointer-events:none;opacity:0;transition:opacity 1s;text-shadow:0 3px 14px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+<h1>仙猪是帅哥 —— 无厘头颜值打投小游戏</h1>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div id="hud"><div id="scorebar"><div id="scorefill"></div></div></div>
+  <div id="sc">帅值 0 / 100</div>
+  <div id="msg"></div>
+  <div id="overlay">
+    <h2 id="ovTitle">仙猪是帅哥</h2>
+    <p id="ovDesc">这个游戏只有一个真相——<b>仙猪是帅哥</b>。<br>屏幕上冒出夸夸弹幕，狂点「帅 / ❤️ / 彩虹」给仙猪加帅值；<br>碰到「丑 / 💀 / 柠檬精」千万别点，点错会掉帅值哦。</p>
+    <button id="bigbtn">开始吹捧</button>
+  </div>
+</div>
+<script>
+(function(){
+function boot(){try{main();}catch(e){alert('出错：'+e.message);}}
+function $(id){return document.getElementById(id);}
+var W=480,H=760;
+var cv=$('cv'),ctx=cv.getContext('2d');
+var fill=$('scorefill'),scEl=$('sc'),ov=$('overlay'),ovTitle=$('ovTitle'),ovDesc=$('ovDesc'),big=$('bigbtn'),msgEl=$('msg');
+var state='ready',score=0,bubbles=[],parts=[],spawnT=0,lastT=0,winT=0;
+var g=null;
+function ac(){if(!g){try{g=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}return g;}
+function rand(a,b){return a+Math.random()*(b-a);}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+/* 弹幕池 */
+var GOOD=[['帅',3],['帅炸了',3],['宇宙第一帅',4],['❤️',2],['🌈',2],['超帅',3],['英俊',3],['❣️',2],['⭐',1],['🤩',2]];
+var BAD=[['丑',-4],['💀',-5],['柠檬精',-5],['一般般',-4],['就这?',-4],['酸',-3],['🤢',-3]];
+function spawn(){
+  var good=Math.random()<0.62;
+  var pool=good?GOOD:BAD;
+  var it=pool[Math.floor(Math.random()*pool.length)];
+  var r=good?rand(34,40):rand(30,36);
+  var x=rand(r+8,W-r-8);
+  var dir=Math.random()<0.5?-1:1;
+  bubbles.push({x:x,y:H+r,vy:-rand(18,34),vx:dir*rand(4,12),r:r,
+    label:it[0],score:it[1],good:good,life:0,tw:Math.random()*6.28,age:rand(0,1)});
+}
+function hitBubble(b){
+  if(b.good)score=clamp(score+b.score,0,100);else score=clamp(score+b.score,0,100);
+  for(var i=0;i<10;i++)parts.push({x:b.x,y:b.y,vx:rand(-140,140),vy:rand(-160,20),r:rand(2,5),c:b.good?'#ffd76a':'#b9a8d9',life:0.6});
+  snd(b.good?760:160,b.good?0.09:0.18,b.good?'sine':'sawtooth',0.12);
+  popMsg(b.good?('+'+b.score):(b.score),b.x,b.y,b.good);
+}
+function popMsg(t,x,y,good){var d=document.createElement('div');d.textContent=t;d.style.cssText='position:absolute;left:'+(x/ W*100)+'%;top:'+(y/H*100)+'%;transform:translate(-50%,-50%);font-size:24px;font-weight:900;color:'+(good?'#ffd76a':'#ff7a90')+';pointer-events:none;text-shadow:0 2px 6px rgba(0,0,0,.5)';$('wrap').appendChild(d);setTimeout(function(){d.remove();},650);}
+function flash(str){msgEl.textContent=str;msgEl.style.opacity=1;setTimeout(function(){msgEl.style.opacity=0;},900);}
+function step(dt){
+  if(state!=='play')return;
+  spawnT-=dt;
+  if(spawnT<=0){spawnT=Math.max(0.34,0.6-score*0.003);if(bubbles.length<16)spawn();}
+  for(var i=bubbles.length-1;i>=0;i--){var b=bubbles[i];
+    b.y+=b.vy*dt;b.x+=b.vx*dt;b.life+=dt;b.tw+=dt*3;
+    if(b.x<b.r||b.x>W-b.r)b.vx*=-1;
+    if(b.y<-b.r-20||b.life>7)bubbles.splice(i,1);
+  }
+  for(var i=parts.length-1;i>=0;i--){var p=parts[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=500*dt;p.life-=dt;if(p.life<=0)parts.splice(i,1);}
+  if(score>=100&&winT===0){winT=1;win();}
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  var bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#2a1356');bg.addColorStop(.5,'#3b1a6d');bg.addColorStop(1,'#5b2a8f');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  drawStars();
+  // 中央仙猪
+  drawPig();
+  // 弹幕
+  for(var i=0;i<bubbles.length;i++)drawBubble(bubbles[i]);
+  // 粒子
+  for(var i=0;i<parts.length;i++){var p=parts[i];ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.29);ctx.fill();}
+  if(winT===1)drawFireworks();
+}
+function drawStars(){ctx.fillStyle='rgba(255,255,255,.16)';for(var i=0;i<30;i++){var x=((i*163)+lastT*3)%W;var y=((i*89)+lastT*1.4)%H;ctx.fillRect(x,y,2,2);}}
+function drawPig(){
+  var cx=W/2,cy=H*0.52;
+  var glow=score/100;
+  // 金色光晕
+  var grd=ctx.createRadialGradient(cx,cy,20,cx,cy,150+glow*120);
+  grd.addColorStop(0,'rgba(255,215,106,'+(0.15+glow*0.5)+')');
+  grd.addColorStop(1,'rgba(255,215,106,0)');
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(cx,cy,150+glow*120,0,6.29);ctx.fill();
+  var s=1+glow*0.5;
+  ctx.save();ctx.translate(cx,cy);ctx.scale(s,s);
+  // 身体阴影
+  ctx.font='120px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('🐷',0,0);
+  // 墨镜
+  ctx.fillStyle='#111';
+  ctx.beginPath();ctx.ellipse(-26,-10,17,9,0,0,6.29);ctx.fill();
+  ctx.beginPath();ctx.ellipse(26,-10,17,9,0,0,6.29);ctx.fill();
+  ctx.strokeStyle='#111';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(-10,-10);ctx.lineTo(10,-10);ctx.stroke();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-30,-11,4,0,6.29);ctx.fill();
+  ctx.beginPath();ctx.arc(22,-11,4,0,6.29);ctx.fill();
+  ctx.restore();
+  // 彩虹光环随帅气闪烁
+  var alpha=0.3+Math.sin(lastT*6)*0.15+glow*0.4;
+  ctx.strokeStyle='rgba('+(255-glow*40)+','+Math.round(140+glow*80)+',255,'+alpha+')';
+  ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(cx,cy,86+glow*30,0,6.29);ctx.stroke();
+}
+function drawBubble(b){
+  ctx.save();ctx.translate(b.x,b.y+Math.sin(b.tw)*3);
+  var bg=b.good?'rgba(60,20,90,.72)':'rgba(40,14,40,.72)';
+  ctx.fillStyle=bg;
+  ctx.beginPath();ctx.arc(0,0,b.r,0,6.29);ctx.fill();
+  ctx.strokeStyle=b.good?'#ffd76a':'#ff7a90';ctx.lineWidth=2.5;
+  ctx.stroke();
+  ctx.fillStyle=b.good?'#ffe9b0':'#ffb6c6';
+  ctx.font='bold '+(b.label.length>3?20:26)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(b.label,0,1);
+  ctx.restore();
+}
+function drawFireworks(){
+  for(var i=0;i<24;i++){
+    var a=(i/24)*6.28+lastT*0.8;
+    var r=(i%6)*18+30;
+    var x=W/2+Math.cos(a)*r*1.6,y=H*0.4+Math.sin(a)*r;
+    ctx.fillStyle='hsl('+(i*15+lastT*60)%360+',90%,60%)';
+    ctx.beginPath();ctx.arc(x,y,4,0,6.29);ctx.fill();
+  }
+}
+function snd(f,dur,type,vol){var a=ac();if(!a)return;try{var o=a.createOscillator(),gn=a.createGain();o.type=type;o.frequency.value=f;
+  gn.gain.value=vol||0.12;o.connect(gn);gn.connect(a.destination);gn.gain.setValueAtTime(vol||0.12,a.currentTime);
+  gn.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+dur);o.start();o.stop(a.currentTime+dur);}catch(e){}}
+function loop(ts){var dt=Math.min(0.033,((ts-lastT)/1000)||0.016);lastT=ts;step(dt);draw();requestAnimationFrame(loop);}
+function toCanvas(e){var r=cv.getBoundingClientRect();var x=(e.clientX-r.left)/r.width*W;var y=(e.clientY-r.top)/r.height*H;return {x:x,y:y};}
+cv.addEventListener('pointerdown',function(e){
+  if(state!=='play')return;
+  var p=toCanvas(e);
+  for(var i=bubbles.length-1;i>=0;i--){var b=bubbles[i];
+    if(Math.abs(b.x-p.x)<b.r&&Math.abs(b.y-p.y)<b.r){hitBubble(b);bubbles.splice(i,1);updateHud();return;}}
+});
+function updateHud(){fill.style.width=score+'%';scEl.textContent='帅值 '+score+' / 100';}
+function reset(){score=0;bubbles=[];parts=[];spawnT=0;winT=0;updateHud();}
+function win(){state='win';winT=1;flash('仙猪是帅哥！！！');snd(880,0.4,'triangle',0.15);setTimeout(function(){snd(1100,0.5,'triangle',0.14);},160);
+  setTimeout(function(){showOv('仙猪是帅哥！！！','帅值爆表，仙猪已进化为<b>宇宙第一帅</b>，全场打 call 停不下来。','再帅一次',false);},1400);}
+function showOv(title,desc,btn,red){ovTitle.textContent=title;ovDesc.innerHTML=desc;big.textContent=btn;big.style.background=red?'linear-gradient(135deg,#ff6b6b,#d94b5c)':'linear-gradient(135deg,#ffb454,#ff5ca8)';ov.classList.remove('hidden');}
+big.addEventListener('click',function(){var a=ac();if(a&&a.state!=='running')a.resume();reset();ov.classList.add('hidden');msgEl.style.opacity=0;state='play';});
+function fit(){var sc=Math.min(window.innerWidth/W,window.innerHeight/H);var w=$('wrap');w.style.width=Math.floor(W*sc)+'px';w.style.height=Math.floor(H*sc)+'px';}
+  function main(){cv.width=W;cv.height=H;reset();state='ready';fit();requestAnimationFrame(loop);}
+  window.addEventListener('resize',fit);window.addEventListener('orientationchange',function(){setTimeout(fit,120);});
+boot();
+})();
+</script>
+</body>
+</html>
