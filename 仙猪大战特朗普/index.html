@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仙猪大战特朗普 - XianZhu TD</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ========== 主菜单 ========== -->
+<div id="menu" class="screen">
+  <div class="menu-box">
+    <div class="menu-pigs">🐷🏹&nbsp;🐷❄️&nbsp;VS&nbsp;💩👔</div>
+    <h1>仙猪大战特朗普</h1>
+    <p class="subtitle">天蓬仙猪军团 · 抵御金发大君的十五路大军</p>
+    <div class="menu-btns">
+      <button id="btnStart" class="big-btn">⚔️ 开始新游戏</button>
+      <button id="btnContinue" class="big-btn hidden">📜 继续战斗</button>
+      <button id="btnHelp" class="big-btn ghost">📖 玩法说明</button>
+    </div>
+    <p class="tip">纯单机 · 零安装 · 自动存档 · 双击即玩</p>
+  </div>
+</div>
+
+<!-- ========== 玩法说明 ========== -->
+<div id="helpModal" class="modal hidden">
+  <div class="modal-box">
+    <h2>📖 玩法说明</h2>
+    <ul class="help-list">
+      <li>🎯 <b>目标</b>：阻止特朗普的军队沿小路冲进仙猪洞府！生命值归零即失败，撑过 <b>15 波</b>并击败 BOSS 特朗普即胜利。</li>
+      <li>🐷 <b>建塔</b>：在右侧选择仙猪塔，再点击草地放置（路径上不能放）。点击已建的塔可<b>升级</b>或<b>出售</b>。</li>
+      <li>🏹 <b>弓箭仙猪</b>：便宜均衡，单体速射，主力输出。</li>
+      <li>🔥 <b>火焰仙猪</b>：抛掷火球，范围爆炸，克制成群敌人。</li>
+      <li>❄️ <b>寒冰仙猪</b>：伤害低但能减速敌人，控制神器。</li>
+      <li>💣 <b>神炮仙猪</b>：高伤大范围炮击，射速慢，专打壮汉。</li>
+      <li>☄️ <b>天蓬之怒</b>：必杀技，充能完毕后点按钮再点地图，召唤陨石轰炸一片敌人。</li>
+      <li>⌨️ <b>快捷键</b>：数字键 1~4 选塔，空格开始波次，ESC 取消选择，右键取消。</li>
+    </ul>
+    <button id="btnHelpClose" class="big-btn">明白了，开战！</button>
+  </div>
+</div>
+
+<!-- ========== 游戏界面 ========== -->
+<div id="game" class="hidden">
+  <div id="hud">
+    <div class="hud-item hp">❤️ 生命 <b id="hudLives">20</b></div>
+    <div class="hud-item gold">🪙 金币 <b id="hudGold">260</b></div>
+    <div class="hud-item wave">🌊 波次 <b id="hudWave">0</b>/15</div>
+    <div class="hud-spacer"></div>
+    <button id="btnWave" class="hud-btn go">▶ 开始第1波</button>
+    <button id="btnSkill" class="hud-btn skill">☄️ 天蓬之怒<span id="skillInfo" class="skill-badge">1</span></button>
+    <button id="btnSpeed" class="hud-btn">⏩ 1x</button>
+    <button id="btnPause" class="hud-btn">⏸ 暂停</button>
+    <button id="btnMute" class="hud-btn">🔊</button>
+    <button id="btnMenu" class="hud-btn">🏠</button>
+  </div>
+
+  <div id="playWrap">
+    <div id="canvasBox">
+      <canvas id="cv" width="960" height="640"></canvas>
+      <div id="redFlash"></div>
+    </div>
+    <div id="side">
+      <h3>🐷 仙猪防御塔</h3>
+      <div id="shop"></div>
+
+      <div id="towerPanel" class="panel hidden">
+        <h3 id="pName"></h3>
+        <div class="p-line">等级：<b id="pLevel"></b></div>
+        <div class="p-line">伤害：<b id="pDmg"></b></div>
+        <div class="p-line">射程：<b id="pRange"></b></div>
+        <div class="p-line">射速：<b id="pRate"></b></div>
+        <div class="p-line" id="pSpecialLine"><span id="pSpecial"></span></div>
+        <button id="btnUpgrade" class="side-btn up">升级</button>
+        <button id="btnSell" class="side-btn sell">出售</button>
+      </div>
+
+      <h3>🔎 下波敌情</h3>
+      <div id="waveInfo"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 暂停 / 胜负 遮罩 ========== -->
+<div id="overlay" class="screen hidden">
+  <div class="menu-box small">
+    <h1 id="ovTitle"></h1>
+    <p id="ovText" class="subtitle"></p>
+    <div id="ovButtons" class="menu-btns"></div>
+  </div>
+</div>
+
+<script src="js/config.js?v=2"></script>
+<script src="js/audio.js?v=2"></script>
+<script src="js/game.js?v=2"></script>
+</body>
+</html>
