@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>仙猪世界 · 2D 种子查看器</title>
+<style>
+  :root{
+    --pink:#ec407a; --gold:#f2d34a; --bg:#141018; --panel:#1c1622; --panel2:#241c2e;
+    --line:#3a2f47; --text:#efe7f2; --dim:#a294ad;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{
+    background:var(--bg); color:var(--text);
+    font:13px/1.5 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    overflow:hidden;
+  }
+  #app{ display:flex; height:100vh; width:100vw; }
+
+  /* ---------- 左侧操作面板 ---------- */
+  #panel{
+    width:312px; flex:0 0 312px; height:100%;
+    background:linear-gradient(180deg,#1c1622,#171220);
+    border-right:1px solid var(--line);
+    padding:14px 14px 24px; overflow-y:auto;
+  }
+  #panel h1{
+    font-size:17px; margin:0 0 2px; color:var(--pink); letter-spacing:1px;
+  }
+  #panel h1 span{ color:var(--gold); }
+  .sub{ color:var(--dim); font-size:11px; margin-bottom:12px; }
+  .sec{
+    margin:12px 0 0; padding:10px; border:1px solid var(--line); border-radius:9px;
+    background:var(--panel2);
+  }
+  .sec h2{
+    font-size:12px; margin:0 0 8px; color:var(--gold); font-weight:600;
+    letter-spacing:.5px; text-transform:none;
+  }
+  label.f{ display:block; font-size:11px; color:var(--dim); margin-bottom:4px; }
+  input[type=text]{
+    width:100%; padding:7px 9px; border-radius:7px; border:1px solid var(--line);
+    background:#100c16; color:var(--text); font-size:13px; outline:none;
+  }
+  input[type=text]:focus{ border-color:var(--pink); }
+  .row{ display:flex; gap:8px; margin-top:8px; }
+  button{
+    cursor:pointer; border-radius:7px; border:1px solid var(--line);
+    background:#2b2136; color:var(--text); font-size:12px; padding:7px 10px;
+    transition:.12s; font-family:inherit;
+  }
+  button:hover{ border-color:var(--pink); background:#3a2b48; }
+  button.primary{
+    background:linear-gradient(180deg,#ec407a,#c22e60); border-color:#ec407a;
+    color:#fff; font-weight:600; flex:1;
+  }
+  button.primary:hover{ filter:brightness(1.1); }
+  .zoomrow{ display:flex; gap:6px; align-items:center; margin-top:8px; }
+  .zoomrow button{ flex:1; padding:6px 0; font-size:15px; line-height:1; }
+  .zoomval{ font-size:12px; color:var(--gold); min-width:74px; text-align:center; }
+  .msg{ margin-top:7px; font-size:11px; min-height:15px; color:var(--dim); }
+  .msg.ok{ color:#7bd88f; }
+  .msg.err{ color:#ff7a90; }
+  .kv{ display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:2px 0; }
+  .kv b{ color:var(--gold); font-weight:600; }
+  .kv span{ color:var(--text); font-variant-numeric:tabular-nums; }
+  .legend{ display:grid; grid-template-columns:1fr 1fr; gap:5px 8px; }
+  .lg{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--dim); }
+  .lg i{ width:11px; height:11px; flex:0 0 11px; display:inline-block; }
+  .altarBox{ border-color:#5a4a2a; background:linear-gradient(180deg,#241d14,#1e1810); }
+  .altarBox h2{ color:var(--gold); }
+  .altList{ max-height:148px; overflow-y:auto; }
+  .altList .kv{ font-size:11px; }
+  .tip{ color:var(--dim); font-size:10.5px; margin-top:6px; }
+  label.ck{
+    display:flex; align-items:center; gap:6px; margin-top:9px;
+    font-size:11.5px; color:var(--text); cursor:pointer;
+  }
+  label.ck input{ accent-color:var(--pink); width:14px; height:14px; cursor:pointer; }
+  .gold{ color:#ffd54a; }
+
+  /* ---------- 右侧舞台 ---------- */
+  #stage{
+    position:relative; flex:1; overflow:hidden; cursor:crosshair;
+    background:#0b0810;
+  }
+  #stage.grabbing{ cursor:grabbing; }
+  #base,#overlay{ position:absolute; left:0; top:0; width:100%; height:100%; }
+  #base{ image-rendering:pixelated; image-rendering:crisp-edges; }
+  #overlay{ pointer-events:none; }
+
+  #busy{
+    position:absolute; left:50%; top:14px; transform:translateX(-50%);
+    background:rgba(20,16,24,.9); border:1px solid var(--pink); color:var(--gold);
+    padding:5px 14px; border-radius:20px; font-size:12px; letter-spacing:1px;
+    opacity:0; transition:.2s; pointer-events:none;
+  }
+  #busy.on{ opacity:1; }
+
+  #tooltip{
+    position:absolute; pointer-events:none; display:none;
+    background:rgba(20,16,24,.94); border:1px solid var(--gold); border-radius:6px;
+    padding:4px 8px; font-size:11px; color:var(--text); white-space:nowrap;
+    transform:translate(12px,12px); z-index:5;
+  }
+  #hint{
+    position:absolute; right:10px; bottom:8px; color:#6d6078; font-size:11px;
+    pointer-events:none; text-align:right;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <h1>仙猪世界 <span>· 2D 种子查看器</span></h1>
+    <div class="sub">俯视群系 / 结构 / 祭坛分布（与游戏生成逻辑逐字一致）</div>
+
+    <div class="sec">
+      <h2>种子</h2>
+      <label class="f" for="seedInput">输入种子（数字或文本，留空随机）</label>
+      <input type="text" id="seedInput" value="xianzhu" spellcheck="false">
+      <div class="row">
+        <button class="primary" id="btnGen">生成</button>
+        <button id="btnRand">随机</button>
+      </div>
+      <div class="msg" id="seedMsg"></div>
+      <div class="kv"><b>种子数值</b><span id="seedNum">-</span></div>
+    </div>
+
+    <div class="sec">
+      <h2>视野</h2>
+      <div class="zoomrow">
+        <button id="btnZoomIn" title="放大">＋</button>
+        <div class="zoomval" id="zoomVal">4 格 / 像素</div>
+        <button id="btnZoomOut" title="缩小">－</button>
+      </div>
+      <div class="row">
+        <button id="btnReset" style="flex:1">回到原点</button>
+        <button id="btnExport" style="flex:1">导出 PNG</button>
+      </div>
+      <div class="tip">滚轮缩放 · 拖拽平移 · 方向键移动 · 鼠标悬停查看该点信息</div>
+      <label class="ck"><input type="checkbox" id="onlyMap"> 只显示能开出祭坛坐标的宝箱点（遗迹 + 洞穴）</label>
+    </div>
+
+    <div class="sec">
+      <h2>鼠标位置</h2>
+      <div class="kv"><b>世界坐标</b><span id="roPos">-</span></div>
+      <div class="kv"><b>群系</b><span id="roBiome">-</span></div>
+      <div class="kv"><b>地表高度</b><span id="roH">-</span></div>
+      <div class="kv"><b>河流强度</b><span id="roRiver">-</span></div>
+      <div class="kv"><b>陆地性</b><span id="roLand">-</span></div>
+    </div>
+
+    <div class="sec altarBox">
+      <h2>★ 特朗普祭坛</h2>
+      <div class="kv"><b>固定席位</b><span id="altCount">-</span></div>
+      <div class="altList" id="altList"></div>
+      <div class="tip">这里列的是种子直接决定的固定席位：近圈 1000 格内 3 座、远圈 1000~5000 格 7 座。<br>
+        此外每座地表遗迹有 0.1% 概率变异成同样的祭坛，数量不固定，因此不在这张表里，只画在图上。<br>
+        游戏内的古卷与右上角坐标指引显示的是「离玩家最近的那一座」，变异祭坛也一并参与比较。<br>
+        视野粗到 8 格/像素及以上时图上只画祭坛（其余标记省略），这时视野内的祭坛是逐区块精算的。</div>
+    </div>
+
+    <div class="sec">
+      <h2>＋ 出生点</h2>
+      <div class="kv"><b>坐标</b><span id="spawnPos">-</span></div>
+      <div class="kv"><b>所在群系</b><span id="spawnBiome">-</span></div>
+      <div class="kv"><b>离原点</b><span id="spawnDist">-</span></div>
+      <button id="btnGoSpawn" style="width:100%">跳到出生点</button>
+      <div class="tip">与游戏内出生点使用同一套「从原点向外环扫」的顺序推算。本页只算地形高度、不生成方块，因此看不见树冠/水面遮挡——游戏落地前会做方块复核并就近微调，实际出生点通常在此标记十几格内。</div>
+    </div>
+
+    <div class="sec">
+      <h2>图例 · 结构类型</h2>
+      <div class="legend" id="legend"></div>
+      <div class="tip">★ 金色大星 = 特朗普祭坛（种子固定 3 座在 1000 格内、7 座在 1000~5000 格；另有每座地表遗迹 0.1% 变异而来的，两者完全一样、不作区分）　＋ 白色十字 = 出生点　▫ 灰色小方 = 原点 (0,0)<br>
+        <span class="gold">★ 虚线金环 = 遗迹宝箱可开出「特朗普祭坛坐标」</span>（视野内 <b class="gold" id="mapCount">0</b> 个）<br>
+        <span style="color:#8fd0ff">◆ 浅蓝菱形 = 地下洞穴宝箱</span>（视野内 <b id="caveCount" style="color:#8fd0ff">0</b> 个），
+        其中<span class="gold">金边 + 金圈者含祭坛坐标</span>（<b class="gold" id="caveMapCount">0</b> 个）<br>
+        洞穴宝箱已按洞穴开凿结果逐点推算（y=6~40 的第一个洞穴口袋），与游戏生成一致；
+        另有猪猪矿坑井筒底部的宝箱，位置见「猪猪矿坑」圆心。<br>
+        视野 ≥8 格/像素时只渲染祭坛，上述结构与洞穴标记不画、计数显示为 —。</div>
+      <div class="tip gold" id="ovNote" style="display:none"></div>
+    </div>
+  </aside>
+
+  <main id="stage">
+    <canvas id="base"></canvas>
+    <canvas id="overlay"></canvas>
+    <div id="busy">生成中…</div>
+    <div id="tooltip"></div>
+    <div id="hint">《仙猪世界》种子查看器 · file:// 单文件版</div>
+  </main>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   以下三段代码「逐字复制」自 index.html（不改一个数字）。
+   对应区块：常量/方块定义、种子噪声、生物群系、结构分布。
+   ============================================================ */
+
+/* ==================== 常量与方块定义 ==================== */
+const CS = 16, CH = 128;           // chunk 16×128×16，世界高度 128 格
+
+const AIR=0, GRASS=1, BEDROCK=2, DIRT=3, STONE=4, LOG=5, LEAVES=6, FLOWER=7,
+      SAND=8, SANDSTONE=9, SNOW=10, ICE=11, COAL=12, IRON=13, GOLD=14, DIAMOND=15,
+      REDSTONE=16, GRAVEL=17, GRANITE=18, CACTUS=19, MUSHROOM=20, DEADBUSH=21,
+      SWAMP_GRASS=22, SPRUCE_LOG=23, SPRUCE_LEAVES=24, SNOW_GRASS=25,
+      PLANK=26, CRAFT_TABLE=27, WATER=28, CHEST=29, CHEST_OPEN=30,
+      // 遗迹/村庄/祭坛新增建材（全部仍是像素猪头贴图）
+      MOSS=31, CARVED=32, GOLD_BLOCK=33, BONE=34, LAMP=35, ALTAR=36,
+      BED=37,                            // 猪猪床：右键躺下，随时可跳过夜晚
+      // 新群系建材：焦岩黑石 / 樱花粉叶 / 竹林竹节
+      BASALT=38, CHERRY_LEAVES=39, BAMBOO=40;
+const SEA_LEVEL = 61;              // 海平面：低于此高度的空气会被水填满
+
+/* ==================== 种子系统：哈希 / PRNG / 噪声 ==================== */
+let worldSeed = 0;
+function u32(x){ return x >>> 0; }
+// 整数坐标 → 确定性哈希（0..1），种子参与
+function hash2(x, z, salt) {
+  let h = worldSeed ^ Math.imul(x | 0, 374761393) ^ Math.imul(z | 0, 668265263) ^ Math.imul(salt | 0, 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+// mulberry32：种子 → 流式 PRNG（用于区块内特征与生物）
+function makeRng(s) {
+  let a = s >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function chunkRng(cx, cz, salt) {
+  let h = worldSeed ^ Math.imul(cx, 73856093) ^ Math.imul(cz, 19349663) ^ Math.imul(salt | 0, 2654435761);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return makeRng(h ^ (h >>> 16));
+}
+// 字符串种子 → uint32（逐字符混合），数字种子直接取模
+function hashStringSeed(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+/* 种子验证与规范化：
+   - 允许：数字、字母、空格、- _ , . ；长度 1..32
+   - 纯数字 → 按数值 mod 2^32
+   - 空 → 随机种子
+   返回 { ok, seed, msg } */
+function normalizeSeed(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  if (!s) {
+    worldSeedRandomPending = true;
+    return { ok:true, seed:(Math.random() * 4294967296) >>> 0, msg:'已随机生成种子' };
+  }
+  if (s.length > 32) return { ok:false, msg:'种子长度不能超过 32 个字符' };
+  if (!/^[A-Za-z0-9 _,.\-]+$/.test(s)) return { ok:false, msg:'只允许字母、数字、空格及 - _ , .' };
+  if (/^-?\d+$/.test(s)) {
+    const n = Math.abs(parseInt(s, 10)) % 4294967296;
+    if (!n) return { ok:false, msg:'数字种子不能为 0' };
+    return { ok:true, seed:n >>> 0, msg:'有效数字种子' };
+  }
+  const h = hashStringSeed(s);
+  if (!h) return { ok:false, msg:'该种子规范化后无效，请更换' };
+  return { ok:true, seed:h, msg:'有效文本种子' };
+}
+let worldSeedRandomPending = false;
+
+// 值噪声（双线性平滑插值），种子驱动；scale 为波长（格）
+function vnoise(x, z, scale, salt) {
+  x /= scale; z /= scale;
+  const ix = Math.floor(x), iz = Math.floor(z);
+  let fx = x - ix, fz = z - iz;
+  fx = fx * fx * (3 - 2 * fx);
+  fz = fz * fz * (3 - 2 * fz);
+  const a = hash2(ix,     iz,     salt);
+  const b = hash2(ix + 1, iz,     salt);
+  const c = hash2(ix,     iz + 1, salt);
+  const d = hash2(ix + 1, iz + 1, salt);
+  return a + (b - a) * fx + (c - a) * fz + (a - b - c + d) * fx * fz;
+}
+function clamp01(v){ return v < 0 ? 0 : v > 1 ? 1 : v; }
+function smooth(t){ return t * t * (3 - 2 * t); }
+// 三维哈希 + 三维值噪声（三线性插值），用于洞穴开凿
+function hash3(x, y, z, salt) {
+  let h = worldSeed ^ Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 1103515245)
+        ^ Math.imul(z | 0, 668265263) ^ Math.imul(salt | 0, 2246822519);
+  h = Math.imul(h ^ (h >>> 15), 1274126177);
+  h ^= h >>> 13;
+  return (h >>> 0) / 4294967296;
+}
+const G8 = new Float64Array(8);
+function vnoise3(x, y, z, scale, salt) {
+  x /= scale; y /= scale; z /= scale;
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fx = smooth(x - ix), fy = smooth(y - iy), fz = smooth(z - iz);
+  for (let k = 0; k < 2; k++) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++)
+    G8[(k * 2 + j) * 2 + i] = hash3(ix + i, iy + j, iz + k, salt);
+  const a00 = G8[0] + (G8[1] - G8[0]) * fx, a01 = G8[2] + (G8[3] - G8[2]) * fx;
+  const a10 = G8[4] + (G8[5] - G8[4]) * fx, a11 = G8[6] + (G8[7] - G8[6]) * fx;
+  const b0 = a00 + (a01 - a00) * fz, b1 = a10 + (a11 - a10) * fz;
+  return b0 + (b1 - b0) * fy;
+}
+
+/* ==================== 生物群系（8 种，全部猪猪主题） ==================== */
+const B_PLAINS=0, B_FOREST=1, B_SWAMP=2, B_DESERT=3, B_SAVANNA=4, B_SNOWY=5, B_TUNDRA=6, B_MOUNTAIN=7,
+      B_OCEAN=8, B_BEACH=9, B_JUNGLE=10, B_TAIGA=11, B_ISLE=12, B_RIVER=13,
+      B_CHERRY=14, B_BAMBOO=15, B_FLOWER=16, B_SALT=17, B_BASALT=18;
+/* base 基准高度 / amp 起伏幅度 / surf 表土 / sub 心土 / subDepth 心土层厚
+   tree 树密度 / kind 树种(0橡猪 1荒野猪树 2云杉猪 3仙人掌猪 4樱花猪 5猪猪竹 6焦黑枯树)
+   plant 地表植被密度 / pk 植被方块 / snowLine 雪线 */
+const BIOMES = [
+  { name:'猪猪平原', base:64, amp:4,  surf:GRASS,       sub:DIRT,      subDepth:3, tree:0.06, kind:0, plant:0.11, pk:FLOWER },
+  { name:'猪猪森林', base:66, amp:6,  surf:GRASS,       sub:DIRT,      subDepth:3, tree:0.80, kind:0, plant:0.07, pk:FLOWER },
+  { name:'猪猪沼泽', base:60, amp:3,  surf:SWAMP_GRASS, sub:DIRT,      subDepth:3, tree:0.20, kind:2, plant:0.16, pk:MUSHROOM },
+  { name:'猪猪沙漠', base:66, amp:5,  surf:SAND,        sub:SANDSTONE, subDepth:5, tree:0.05, kind:3, plant:0.06, pk:DEADBUSH },
+  { name:'猪猪荒野', base:68, amp:9,  surf:GRASS,       sub:DIRT,      subDepth:3, tree:0.12, kind:1, plant:0.06, pk:DEADBUSH },
+  { name:'猪猪雪原', base:65, amp:4,  surf:SNOW_GRASS,  sub:DIRT,      subDepth:3, tree:0.07, kind:2, plant:0.03, pk:FLOWER },
+  { name:'猪猪冻原', base:69, amp:10, surf:SNOW,        sub:DIRT,      subDepth:3, tree:0.16, kind:2, plant:0.00, pk:FLOWER },
+  { name:'猪猪山地', base:84, amp:20, surf:STONE,       sub:STONE,     subDepth:3, tree:0.03, kind:2, plant:0.00, pk:FLOWER, snowLine:94 },
+  // ↓ 新增：海洋 / 海滩 / 河流 + 三个陆地群系
+  { name:'猪猪海洋', base:50, amp:4,  surf:SAND,        sub:SAND,      subDepth:3, tree:0.00, kind:0, plant:0.00, pk:FLOWER },
+  { name:'猪猪海滩', base:62, amp:3,  surf:SAND,        sub:SAND,      subDepth:4, tree:0.02, kind:3, plant:0.03, pk:DEADBUSH },
+  { name:'猪猪丛林', base:67, amp:5,  surf:GRASS,       sub:DIRT,      subDepth:3, tree:1.10, kind:0, plant:0.34, pk:FLOWER },
+  { name:'猪猪松林', base:70, amp:8,  surf:GRASS,       sub:DIRT,      subDepth:3, tree:0.55, kind:2, plant:0.10, pk:FLOWER },
+  { name:'猪猪蘑菇岛', base:66, amp:5, surf:SWAMP_GRASS, sub:DIRT,     subDepth:3, tree:0.14, kind:0, plant:0.40, pk:MUSHROOM },
+  { name:'猪猪河流', base:58, amp:2,  surf:SAND,        sub:SAND,      subDepth:3, tree:0.00, kind:0, plant:0.02, pk:DEADBUSH },
+  // ↓ 新增：5 个特色群系（与 index.html 逐字一致）
+  { name:'猪猪樱花林', base:65, amp:4, surf:GRASS,      sub:DIRT,      subDepth:3, tree:0.55, kind:4, plant:0.30, pk:FLOWER },
+  { name:'猪猪竹林',   base:67, amp:5, surf:GRASS,      sub:DIRT,      subDepth:3, tree:1.30, kind:5, plant:0.12, pk:FLOWER },
+  { name:'猪猪花海',   base:64, amp:4, surf:GRASS,      sub:DIRT,      subDepth:3, tree:0.02, kind:0, plant:0.75, pk:FLOWER },
+  { name:'猪猪盐滩',   base:62, amp:1.5, surf:SAND,     sub:SANDSTONE, subDepth:4, tree:0.00, kind:0, plant:0.03, pk:DEADBUSH },
+  { name:'猪猪焦岩',   base:74, amp:12, surf:BASALT,    sub:BASALT,    subDepth:3, tree:0.07, kind:6, plant:0.00, pk:FLOWER },
+];
+
+/* 陆地性：低频噪声决定海洋分布，平滑过渡避免断崖 */
+function landnessAt(x, z) {
+  const n = vnoise(x, z, 430, 801) * 0.62 + vnoise(x, z, 190, 802) * 0.38;
+  const t = (n - 0.30) / 0.16;
+  return t <= 0 ? 0 : (t >= 1 ? 1 : t * t * (3 - 2 * t));
+}
+/* 河流：脊状噪声，越接近 0.5 越靠近河心 */
+const RIVER_W = 0.034;
+function riverAt(x, z) {
+  const r = Math.abs(vnoise(x, z, 300, 701) - 0.5) * 2;
+  if (r >= RIVER_W) return 0;
+  const k = 1 - r / RIVER_W;
+  return k * k;
+}
+/* 陆地群系：排除海洋/海滩/河流，只决定陆地基准高度与地表材质 */
+function landBiomeAt(x, z) {
+  const t = vnoise(x, z, 190, 301) * 0.62 + vnoise(x, z, 74, 302) * 0.38;   // 温度
+  const m = vnoise(x, z, 160, 401) * 0.62 + vnoise(x, z, 62, 402) * 0.38;   // 湿度
+  const mo = vnoise(x, z, 210, 501);
+  if (mo > 0.775) {                                                         // 山地：只有最高的山顶核心才可能出焦岩
+    if (mo > 0.87 && vnoise(x, z, 70, 507) > 0.68) return B_BASALT;          // 与 index.html 保持同步：焦岩只作山顶点缀
+    return B_MOUNTAIN;
+  }
+  if (t < 0.355) return m > 0.55 ? B_TUNDRA : B_SNOWY;                      // 寒带
+  if (t > 0.645) {                                                          // 热带
+    if (m < 0.40) return B_DESERT;
+    if (m > 0.72) return vnoise(x, z, 200, 504) > 0.62 ? B_BAMBOO : B_JUNGLE;   // 湿热处生竹林
+    if (m > 0.62) return B_SAVANNA;
+    return B_PLAINS;
+  }
+  if (t < 0.44 && m > 0.50) return B_TAIGA;                                 // 寒温带针叶林
+  if (m > 0.75 && vnoise(x, z, 150, 502) > 0.66) return B_ISLE;             // 蘑菇岛
+  if (m < 0.38) {                                                           // 温带干燥带：花海 / 盐滩小斑块
+    const q = vnoise(x, z, 180, 505);
+    if (q > 0.78) return B_SALT;
+    if (q > 0.56) return B_FLOWER;
+    return B_PLAINS;
+  }
+  if (m < 0.60) return B_FOREST;
+  if (m < 0.70 && vnoise(x, z, 170, 503) > 0.52) return B_CHERRY;           // 森林与沼泽之间插一层樱花林
+  return B_SWAMP;
+}
+function biomeIndexAt(x, z) {
+  const land = landnessAt(x, z);
+  if (land < 0.30) return B_OCEAN;                    // 海洋
+  if (riverAt(x, z) > 0.52) return B_RIVER;           // 河流河床
+  if (land < 0.58) return B_BEACH;                    // 海岸沙滩
+  return landBiomeAt(x, z);
+}
+function biomeNameAt(x, z) { return BIOMES[biomeIndexAt(x, z)].name; }
+
+/* 群系参数按 8 格网格采样 + 双线性插值：群系交界处高度平滑过渡，不会出现断崖，
+   采样点取世界绝对坐标，因此区块之间完全无缝 */
+const biomeCache = new Map();
+function biomeParamsAt(x, z) {
+  const gx = Math.floor(x / 8), gz = Math.floor(z / 8), k = gx + ',' + gz;
+  let v = biomeCache.get(k);
+  if (!v) {
+    const b = BIOMES[landBiomeAt(gx * 8, gz * 8)];
+    v = [b.base, b.amp];
+    if (biomeCache.size > 60000) biomeCache.clear();
+    biomeCache.set(k, v);
+  }
+  return v;
+}
+// 地形高度：陆地基准 + 多尺度噪声起伏 → 海洋平滑压到海底 → 河流切出河谷
+const RIVER_BED = SEA_LEVEL - 3, OCEAN_FLOOR = 50;
+function heightAt(x, z) {
+  const x0 = Math.floor(x / 8) * 8, z0 = Math.floor(z / 8) * 8;
+  const tx = (x - x0) / 8, tz = (z - z0) / 8;
+  const a = biomeParamsAt(x0, z0),       b = biomeParamsAt(x0 + 8, z0);
+  const c = biomeParamsAt(x0, z0 + 8),   d = biomeParamsAt(x0 + 8, z0 + 8);
+  const base = a[0] + (b[0] - a[0]) * tx + (c[0] - a[0]) * tz + (a[0] - b[0] - c[0] + d[0]) * tx * tz;
+  const amp  = a[1] + (b[1] - a[1]) * tx + (c[1] - a[1]) * tz + (a[1] - b[1] - c[1] + d[1]) * tx * tz;
+  const n1 = vnoise(x, z, 62, 11), n2 = vnoise(x, z, 23, 12), n3 = vnoise(x, z, 9, 13);
+  let h = base + (n1 - 0.5) * amp * 1.5 + (n2 - 0.5) * amp * 0.55 + (n3 - 0.5) * 2.0;
+  const land = landnessAt(x, z);
+  if (land < 1) {                                    // 海洋：向海底平滑过渡，不会形成断崖
+    const floor = OCEAN_FLOOR + (vnoise(x, z, 90, 803) - 0.5) * 7;
+    h = h * land + floor * (1 - land);
+  }
+  const rs = riverAt(x, z);
+  if (rs > 0) h += (RIVER_BED - h) * rs * 0.95;      // 河流：向河床切下去
+  return Math.max(3, Math.min(CH - 14, Math.round(h)));
+}
+
+/* ==================== 结构分布：按区块掷骰的纯函数区 ====================
+   规则：以 16×16 的区块为单位独立掷骰，命中概率 STRUCT_P = 2%；
+   命中后中心点在该区块内随机取值，不做任何间距检查 —— 结构可以挨得很近甚至重叠。
+   平均约每 12,800 格²（113×113）一个结构，最近邻平均 ≈57 格。
+   判定只由 hash2(cx,cz,salt) + 地形决定，任何区块独立计算都能得到完全相同的结果，
+   无需任何运行时全局状态。重新开局后才会看到新的分布。              */
+const ATTEMPTS = 3;
+const STRUCT_P = 0.02;                       // 每个区块生成结构的概率（2%）
+const NO_STRUCT_R = 0;                       // 出生点保护半径（0 = 不保护：结构可刷到出生点旁）
+
+/* 结构类型表：w 权重（已按降序排列＝群系回退顺序）、bs 群系白名单、r 半径、tier 宝箱档
+   权重合计 1.00；mine（猪猪矿洞，井筒直通地下）刻意压低，避免地面到处是坑 */
+const STRUCT_KINDS = [
+  { id:'ruin',    w:0.14, r:4,  tier:'low',
+    bs:[B_PLAINS,B_FOREST,B_SWAMP,B_DESERT,B_SAVANNA,B_SNOWY,B_TUNDRA,B_MOUNTAIN,B_JUNGLE,B_TAIGA,B_ISLE,B_BEACH,B_CHERRY,B_BAMBOO,B_FLOWER,B_SALT,B_BASALT] },
+  { id:'camp',    w:0.11, r:4,  tier:'low',
+    bs:[B_PLAINS,B_FOREST,B_TAIGA,B_SAVANNA,B_JUNGLE,B_SNOWY,B_TUNDRA,B_BAMBOO,B_CHERRY] },
+  { id:'grave',   w:0.11, r:7,  tier:'low',
+    bs:[B_FOREST,B_SWAMP,B_TAIGA,B_SNOWY,B_TUNDRA,B_CHERRY,B_BASALT,B_FLOWER] },
+  { id:'tower',   w:0.10, r:3,  tier:'mid',
+    bs:[B_PLAINS,B_FOREST,B_SWAMP,B_DESERT,B_SAVANNA,B_SNOWY,B_TUNDRA,B_MOUNTAIN,B_JUNGLE,B_TAIGA,B_ISLE,B_BEACH,B_CHERRY,B_BAMBOO,B_FLOWER,B_SALT,B_BASALT] },
+  { id:'windmill', w:0.09, r:6, tier:'low',
+    bs:[B_PLAINS,B_FOREST,B_TAIGA,B_SAVANNA,B_CHERRY,B_FLOWER,B_SALT,B_JUNGLE] },
+  { id:'belfry',  w:0.08, r:4,  tier:'mid',
+    bs:[B_PLAINS,B_FOREST,B_SWAMP,B_DESERT,B_SAVANNA,B_SNOWY,B_TUNDRA,B_MOUNTAIN,B_JUNGLE,B_TAIGA,B_ISLE,B_BEACH,B_CHERRY,B_BAMBOO,B_FLOWER,B_SALT,B_BASALT] },
+  { id:'shrine',  w:0.07, r:6,  tier:'mhigh',
+    bs:[B_FOREST,B_JUNGLE,B_TAIGA,B_ISLE,B_SNOWY,B_TUNDRA,B_BAMBOO,B_CHERRY] },
+  { id:'village', w:0.06, r:24, tier:'low',
+    bs:[B_PLAINS,B_FOREST,B_TAIGA,B_SAVANNA,B_SNOWY,B_DESERT,B_CHERRY,B_FLOWER] },
+  { id:'arena',   w:0.06, r:9,  tier:'high',
+    bs:[B_DESERT,B_SAVANNA,B_SALT,B_BASALT] },
+  { id:'igloo',   w:0.06, r:5,  tier:'mid',
+    bs:[B_SNOWY,B_TUNDRA] },
+  { id:'well',    w:0.05, r:3,  tier:'low',
+    bs:[B_PLAINS,B_FOREST,B_SWAMP,B_DESERT,B_SAVANNA,B_JUNGLE,B_TAIGA,B_CHERRY,B_BAMBOO,B_FLOWER,B_SALT,B_BASALT] },
+  { id:'mine',    w:0.03, r:5,  tier:'mid',
+    bs:[B_MOUNTAIN,B_SAVANNA,B_PLAINS,B_TAIGA,B_TUNDRA,B_BASALT] },
+  { id:'temple',  w:0.03, r:6,  tier:'high',
+    bs:[B_DESERT,B_SAVANNA,B_SALT] },
+  { id:'wreck',   w:0.01, r:6,  tier:'high', water:true,
+    bs:[B_OCEAN,B_RIVER] },
+];
+const STRUCT_KIND_BY_ID = (() => { const o={}; for (const k of STRUCT_KINDS) o[k.id]=k; return o; })();
+const STRUCT_CUM = (() => { const o=[]; let s=0; for (const k of STRUCT_KINDS) { s+=k.w; o.push(s); } return o; })();
+
+/* 八方向采样环：只用纯函数判断 footprint 是否落在水/陆/垂直边界外 */
+const DIR8 = [[1,0],[0.7071,0.7071],[0,1],[-0.7071,0.7071],[-1,0],[-0.7071,-0.7071],[0,-1],[0.7071,-0.7071]];
+function structFootprintOK(kind, wx, wz) {
+  for (let s = 1; s <= 2; s++) {
+    const rad = kind.r * (s === 1 ? 0.5 : 1);
+    for (const d of DIR8) {
+      const px = Math.round(wx + d[0] * rad), pz = Math.round(wz + d[1] * rad);
+      const h = heightAt(px, pz);
+      if (kind.water) { if (h > SEA_LEVEL - 2) return false; }   // 沉船必须整体在深水里
+      else if (h <= SEA_LEVEL + 2) return false;                 // 陆地结构整片不能进水
+      if (!kind.water && h + 20 + 4 >= CH) return false;         // 垂直越界（最高结构约 20 层）
+    }
+  }
+  return true;
+}
+/* 掷权重选类型；群系不匹配时按权重降序回退到第一个匹配的类型 */
+function structKindFor(wx, wz, gx, gz) {
+  const bi = biomeIndexAt(wx, wz);
+  const r = hash2(gx, gz, 907);
+  let idx = 0;
+  while (idx < STRUCT_CUM.length - 1 && r >= STRUCT_CUM[idx]) idx++;
+  if (STRUCT_KINDS[idx].bs.indexOf(bi) >= 0) return STRUCT_KINDS[idx];
+  for (const k of STRUCT_KINDS) if (k.bs.indexOf(bi) >= 0) return k;
+  return STRUCT_KINDS[0];
+}
+/* 区块 → 结构站点（纯函数；无结构返回 null）。
+   掷骰 + 校验地形，不与任何邻居比较间距 —— 允许重叠出现。
+   返回的 gx/gz 就是区块坐标（只作为形状哈希的输入）。 */
+function structChunkInfo(cx, cz) {
+  if (hash2(cx, cz, 901) >= STRUCT_P) return null;
+  for (let k = 0; k < ATTEMPTS; k++) {
+    const x = cx * CS + ((hash2(cx * 7 + k, cz, 902) * CS) | 0);
+    const z = cz * CS + ((hash2(cx, cz * 7 + k, 903) * CS) | 0);
+    if (Math.abs(x) < NO_STRUCT_R && Math.abs(z) < NO_STRUCT_R) continue;   // 出生点保护
+    const bi = biomeIndexAt(x, z);
+    if (riverAt(x, z) > 0.3 && bi !== B_RIVER) continue;                    // 河心不放陆地结构
+    if (landnessAt(x, z) < 0.58 && bi !== B_OCEAN) continue;                // 海洋/海滩不放陆地结构
+    const kind = structKindFor(x, z, cx, cz);
+    if (!structFootprintOK(kind, x, z)) continue;
+    return { gx: cx, gz: cz, x, z, kind, r: kind.r };
+  }
+  return null;
+}
+/* 点是否落在结构范围内（宝箱分档用；纯函数，与生成判定一致） */
+function structCovers(s, wx, wz) {
+  const dx = Math.abs(wx - s.x), dz = Math.abs(wz - s.z);
+  if (s.kind.id === 'village') return dx <= 24 && dz <= 24;
+  return dx <= s.r && dz <= s.r;
+}
+/* 覆盖该点的结构站点（横扫 ±2 区块即可：半径 26 < 2×16） */
+function ruinSiteAt(wx, wz) {
+  const bx = Math.floor(wx / CS), bz = Math.floor(wz / CS);
+  for (let cx = bx - 2; cx <= bx + 2; cx++) for (let cz = bz - 2; cz <= bz + 2; cz++) {
+    const s = structChunkInfo(cx, cz);
+    if (s && structCovers(s, wx, wz)) return s;
+  }
+  return null;
+}
+
+/* ---- 特朗普祭坛：种子决定的多座坐标，任意区块独立算出同一结果 ----
+   按到原点 (0,0) 的直线距离分两圈：近圈 1000 格内 3 座、远圈 1000~5000 格 7 座。
+   两圈各用一条独立候选序列（盐不同），同一个 k 在两圈给出互不相干的点。
+   候选先用完整地形判据筛，不够时逐级放宽，保证座数稳定；近圈不设最小距离
+   （ALTAR_MIN_R = 0），祭坛可以刷到出生点旁边。
+   结果按种子缓存 —— 否则每个区块生成时都要重跑上百次噪声。 */
+const ALTAR_NEAR_N = 3, ALTAR_FAR_N = 7;
+const ALTAR_NEAR_R = 1000, ALTAR_FAR_R = 5000, ALTAR_MIN_R = 0, ALTAR_GAP = 64;
+const ALTAR_MUT_P = 0.001;               // 每座地表遗迹刷新时有 0.1% 概率变异成祭坛
+const ALTAR_RINGS = [
+  { need: ALTAR_NEAR_N, rMin: ALTAR_MIN_R, rMax: ALTAR_NEAR_R, sx: 950, sz: 951 },
+  { need: ALTAR_FAR_N,  rMin: ALTAR_NEAR_R, rMax: ALTAR_FAR_R,  sx: 952, sz: 953 },
+];
+/* 该结构站点是否变异成了祭坛：只看站点坐标（纯函数，跨区块结果一致）。
+   沉船整座在水下，不参与变异，否则祭坛会从海底长出来。 */
+function structMutates(s) { return !s.kind.water && hash2(s.x, s.z, 999) < ALTAR_MUT_P; }
+const ALTAR_TRIES = [192, 64, 32];       // 三级放宽各试多少个候选（结果按种子缓存，只算一次）
+/* 第 ring 圈的候选点：采样方框边长就取该圈外径，落在圈外的丢弃 */
+function altarCand(ring, k) {
+  const r = ALTAR_RINGS[ring];
+  const x = Math.round((hash2(k, 0, r.sx) - 0.5) * 2 * r.rMax);
+  const z = Math.round((hash2(k, 1, r.sz) - 0.5) * 2 * r.rMax);
+  const d = Math.hypot(x, z);
+  if (d < r.rMin || d > r.rMax) return null;
+  return { x, z, d };
+}
+/* 地形判据：tier0 = 完整（原先那一套）；tier1 = 只要在海平面之上；tier2 = 不挑，只保证座数 */
+function altarOk(s, tier, h) {
+  if (tier === 1) return h > SEA_LEVEL + 1;
+  if (tier === 2) return true;
+  const bi = biomeIndexAt(s.x, s.z);
+  if (bi === B_OCEAN || bi === B_RIVER || bi === B_BEACH) return false;
+  if (landnessAt(s.x, s.z) <= 0.72) return false;
+  if (riverAt(s.x, s.z) !== 0) return false;
+  return h > SEA_LEVEL + 4 && h < SEA_LEVEL + 42;
+}
+let altarCache = null, altarCacheSeed = null;
+function altarSites() {
+  if (altarCache && altarCacheSeed === worldSeed) return altarCache;
+  const out = [];
+  for (let ring = 0; ring < ALTAR_RINGS.length; ring++) {
+    const r = ALTAR_RINGS[ring];
+    let got = 0;
+    for (let tier = 0; tier < ALTAR_TRIES.length && got < r.need; tier++) {
+      for (let k = 0; k < ALTAR_TRIES[tier] && got < r.need; k++) {
+        const s = altarCand(ring, k);
+        if (!s) continue;
+        const h = heightAt(s.x, s.z);
+        if (!altarOk(s, tier, h)) continue;
+        let tooClose = false;                          // 基座半径 13 格，两座之间至少留 ALTAR_GAP
+        for (const o of out) if (Math.hypot(o.x - s.x, o.z - s.z) < ALTAR_GAP) { tooClose = true; break; }
+        if (tooClose) continue;
+        s.hy = h;
+        out.push(s); got++;
+      }
+    }
+  }
+  out.sort((a, b) => a.d - b.d);                       // 由近到远：nearestAltar 的兜底取 list[0]
+  altarCacheSeed = worldSeed; altarCache = out;
+  return out;
+}
+/* 离 (x,z) 最近的一座祭坛：游戏内坐标指引 / 古卷 / locate 显示的都是它 */
+function nearestAltar(x, z) {
+  const list = altarSites();
+  let best = list[0], bd = Infinity;
+  for (const s of list) { const d = Math.hypot(s.x - x, s.z - z); if (d < bd) { bd = d; best = s; } }
+  return best;
+}
+
+/* 出生点：与 index.html 的 findSpawn 用同一套「由近到远环扫 + 先严后宽」的顺序。
+   查看器不做方块级生成，所以把游戏里「读真实方块复核」那一步换成 heightAt + 群系/河流判据：
+   等价于「地表高于海平面、不是水面」，唯一差别是看不到树冠遮挡 ——
+   若第一候选正好在树冠下，游戏会继续往后取，落点可能差几格，属正常偏差。 */
+function spawnSpot(){
+  const test=(x,z)=>{
+    if(heightAt(x,z)<=SEA_LEVEL)return false;                  // 低于海平面必是海/河床
+    const bi=biomeIndexAt(x,z);
+    if(bi===B_OCEAN||bi===B_RIVER)return false;
+    if(riverAt(x,z)>0.52)return false;
+    return true;
+  };
+  const ok=(x,z,strict)=>{
+    if(!test(x,z))return false;
+    if(!strict)return true;
+    // 严判：四邻也得是陆地，避免出生在海上孤岛
+    return test(x+1,z)&&test(x-1,z)&&test(x,z+1)&&test(x,z-1);
+  };
+  const sweep=(rMax,rStep,arc,strict)=>{
+    for(let r=0;r<=rMax;r+=rStep){
+      const n=r===0?1:Math.max(8,Math.round(6.2831853*r/arc));
+      for(let i=0;i<n;i++){
+        const a=i/n*6.2831853;
+        const x=Math.round(Math.cos(a)*r),z=Math.round(Math.sin(a)*r);
+        if(heightAt(x,z)<=SEA_LEVEL)continue;
+        if(ok(x,z,strict))return { x, z, hy: heightAt(x, z) };
+      }
+    }
+    return null;
+  };
+  return sweep(192,6,8,true)||sweep(192,6,8,false)
+      || sweep(384,16,32,true)||sweep(384,16,32,false)
+      || sweep(1536,48,64,false)
+      || { x:0, z:0, hy:heightAt(0,0) };
+}
+
+/* ---- 各遗迹的宝箱落点（x,z）—— 与 index.html 的结构生成器逐字对应 ----
+   坐标爆率只由箱子的 (x,z) 决定：hash2(x,z,943) < 0.20（见 chestLootFor），
+   偏 1 格结果就完全不同，所以必须精确复刻每个 stampCol(...,CHEST) 的坐标。 */
+function structChestSpots(s) {
+  const out = [];
+  switch (s.kind.id) {
+    case 'ruin':                                        // buildRuin：中央宝箱
+      out.push([s.x, s.z]); break;
+    case 'camp':                                        // buildCamp：帐篷内
+      out.push([s.x + 2, s.z]); break;
+    case 'tower': {                                     // buildTower：L=0 层塔心
+      const ox = s.x + (((hash2(s.z, s.x, 932) * 3) | 0) - 1);
+      const oz = s.z + (((hash2(s.x, s.z, 934) * 3) | 0) - 1);
+      out.push([ox, oz]); break;
+    }
+    case 'mine':                                        // buildMine：坑底
+      out.push([s.x, s.z]); break;
+    case 'shrine':                                      // buildShrine：祭台前
+      out.push([s.x, s.z - 2]); break;
+    case 'temple':                                      // buildTemple：地下密室两只
+      out.push([s.x, s.z]); out.push([s.x + 1, s.z]); break;
+    case 'wreck':                                       // buildWreck：船内两只
+      out.push([s.x - 2, s.z]); out.push([s.x + 2, s.z]); break;
+    case 'village': {                                   // buildVillage：井边 + 每栋民居
+      out.push([s.x, s.z + 2]);
+      const n = 3 + ((hash2(s.x, s.z, 971) * 3) | 0);   // 3~5 栋民居
+      for (let i = 0; i < n; i++) {
+        const ang = hash2(s.x + i, s.z, 972) * Math.PI * 2;
+        const dist = 10 + hash2(s.x, s.z + i, 973) * 10;
+        out.push([s.x + Math.round(Math.cos(ang) * dist), s.z + Math.round(Math.sin(ang) * dist)]);
+      }
+      break;
+    }
+    case 'belfry':                                      // buildBelfry：钟室内
+      out.push([s.x, s.z]); break;
+    case 'windmill':                                    // buildWindmill：塔内
+      out.push([s.x, s.z]); break;
+    case 'grave':                                       // buildGrave：墓阵角落
+      out.push([s.x - 2, s.z - 2]); break;
+    case 'arena':                                       // buildArena：斗场中央
+      out.push([s.x, s.z]); break;
+    case 'igloo':                                       // buildIgloo：地下室（爆率只看 x,z，箱在 gy-2）
+      out.push([s.x, s.z]); break;
+    case 'well':                                        // buildWell：井边小屋
+      out.push([s.x + 1, s.z + 1]); break;
+  }
+  return out;
+}
+/* 该结构的宝箱里是否有「特朗普祭坛坐标」（判据与游戏开箱完全一致） */
+function structHasAltarMap(s) {
+  for (const c of structChestSpots(s)) if (hash2(c[0], c[1], 943) < 0.20) return true;
+  return false;
+}
+
+/* ---- 地下洞穴宝箱（对应 index.html 的 carveCaves + placeRuins 地下宝箱段）----
+   游戏里的洞穴宝箱不是「直接摆」出来的：先在 96×96 格网格里掷点，再从 y=6 往下
+   找第一处「本格是空气、脚下实心且不是水、头顶也是空气」的洞穴口袋，找到才放箱。
+   所以要精确复刻，必须能对任意一格单独判断「是否被洞穴挖空」。
+   carveCaves 原本是整区块按 CVS=4 的采样网格 + 三线性插值做的，这里把它改写成
+   可任意取点的纯函数（采样点仍是世界坐标的 4 的倍数，逐字等价）。 */
+const CVS = 4, CAVE_T = 0.022, CAVE_SHELL = 4;
+const RUIN_CAVE_P = 0.65, RUIN_CAVE_CELL = 96;
+const caveCornerCache = new Map();
+function caveCorner(gx, gy, gz, salt){
+  const k = gx + ',' + gy + ',' + gz + ',' + salt;
+  let v = caveCornerCache.get(k);
+  if (v === undefined){
+    v = vnoise3(gx * CVS, gy * CVS, gz * CVS, 36, salt);
+    if (caveCornerCache.size > 300000) caveCornerCache.clear();
+    caveCornerCache.set(k, v);
+  }
+  return v;
+}
+const CT = new Float64Array(8);
+// 与 triLerp 同序：下标 = (y 层*2 + z 层)*2 + x 层，先 x 插值、再 z、最后 y
+function caveTri(gx, gy, gz, tx, ty, tz, salt){
+  for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) for (let i = 0; i < 2; i++)
+    CT[(j * 2 + k) * 2 + i] = caveCorner(gx + i, gy + j, gz + k, salt);
+  const a0 = CT[0] + (CT[1] - CT[0]) * tx, a1 = CT[2] + (CT[3] - CT[2]) * tx;
+  const b0 = CT[4] + (CT[5] - CT[4]) * tx, b1 = CT[6] + (CT[7] - CT[6]) * tx;
+  const c0 = a0 + (a1 - a0) * tz, c1 = b0 + (b1 - b0) * tz;
+  return c0 + (c1 - c0) * ty;
+}
+/* 该格是否被洞穴挖空；colH 为该列地表高度（与 carveCaves 的 heights[col] 一致） */
+function caveAir(wx, wy, wz, colH){
+  const maxY = colH < SEA_LEVEL ? colH - 3 : colH - CAVE_SHELL;
+  if (wy < 1 || wy > maxY) return false;
+  const gx = Math.floor(wx / CVS), gy = Math.floor(wy / CVS), gz = Math.floor(wz / CVS);
+  const tx = (wx - gx * CVS) / CVS, ty = (wy - gy * CVS) / CVS, tz = (wz - gz * CVS) / CVS;
+  const d1 = caveTri(gx, gy, gz, tx, ty, tz, 601) - 0.5;
+  if (d1 > CAVE_T || d1 < -CAVE_T) return false;
+  const d2 = caveTri(gx, gy, gz, tx, ty, tz, 602) - 0.5;
+  if (d2 > CAVE_T || d2 < -CAVE_T) return false;
+  return true;
+}
+/* 该列那个洞穴宝箱的高度（y=6~40 里第一个合法口袋），没有则 -1 */
+function caveChestY(wx, wz){
+  const colH = heightAt(wx, wz);
+  for (let y = 6; y <= 40; y++){
+    if (!caveAir(wx, y, wz, colH)) continue;
+    if (caveAir(wx, y - 1, wz, colH)) continue;      // 脚下必须实心
+    if (!caveAir(wx, y + 1, wz, colH)) continue;     // 头顶必须也是空气
+    return y;
+  }
+  return -1;
+}
+/* 一个 96×96 网格里的地下宝箱（每格 6 个候选列，与 placeRuins 逐字对应） */
+const caveCellCache = new Map();
+function caveCellSpots(gx, gz){
+  const key = gx + ',' + gz;
+  let v = caveCellCache.get(key);
+  if (v) return v;
+  v = [];
+  if (hash2(gx, gz, 906) < RUIN_CAVE_P){
+    for (let i = 0; i < 6; i++){
+      const wx = gx * RUIN_CAVE_CELL + ((hash2(gx * 5 + i, gz, 908) * RUIN_CAVE_CELL) | 0);
+      const wz = gz * RUIN_CAVE_CELL + ((hash2(gx, gz * 5 + i, 909) * RUIN_CAVE_CELL) | 0);
+      const y = caveChestY(wx, wz);
+      if (y < 0) continue;
+      v.push({ x: wx, y: y, z: wz, map: hash2(wx, wz, 943) < 0.20 });
+    }
+  }
+  if (caveCellCache.size > 60000) caveCellCache.clear();
+  caveCellCache.set(key, v);
+  return v;
+}
+
+/* ============================================================
+   查看器逻辑（以下为工具自身代码，不属于游戏生成逻辑）
+   ============================================================ */
+
+/* ---------- 配色 ---------- */
+// 下标与 B_* 常量一一对应：0平原 1森林 2沼泽 3沙漠 4荒野 5雪原 6冻原 7山地 8海洋 9海滩 10丛林 11松林 12蘑菇岛 13河流
+const BIOME_COLORS = [
+  [ 99,168, 84],   // 0  猪猪平原  绿
+  [ 56,132, 66],   // 1  猪猪森林  绿
+  [ 74,104, 62],   // 2  猪猪沼泽  暗绿
+  [226,201,124],   // 3  猪猪沙漠  沙黄
+  [176,168, 96],   // 4  猪猪荒野  干草黄绿
+  [232,238,245],   // 5  猪猪雪原  白
+  [198,208,214],   // 6  猪猪冻原  白灰
+  [118,120,130],   // 7  猪猪山地  深灰
+  [ 32, 82,148],   // 8  猪猪海洋  深蓝
+  [222,206,150],   // 9  猪猪海滩  沙
+  [ 40,152, 70],   // 10 猪猪丛林  绿
+  [ 66,128,104],   // 11 猪猪松林  绿
+  [150,122,162],   // 12 猪猪蘑菇岛 紫灰
+  [ 46,124,192],   // 13 猪猪河流  蓝
+  [247,170,205],   // 14 猪猪樱花林 粉
+  [116,178, 78],   // 15 猪猪竹林  嫩绿
+  [232,152,196],   // 16 猪猪花海  花粉
+  [236,232,214],   // 17 猪猪盐滩  灰白
+  [ 58, 56, 66],   // 18 猪猪焦岩  黑
+];
+const KIND_STYLE = {
+  ruin:    { color:'#e0b060', shape:'circle',   cn:'猪猪废墟',    sym:'●' },
+  camp:    { color:'#e07a3c', shape:'square',   cn:'猪猪营地',    sym:'■' },
+  tower:   { color:'#b06cd8', shape:'triangle', cn:'倒塌的猪头塔', sym:'▲' },
+  shrine:  { color:'#4fd0e0', shape:'diamond',  cn:'猪猪小神庙',  sym:'◆' },
+  village: { color:'#f2d34a', shape:'circle',   cn:'猪猪村庄',    sym:'⬤' },
+  mine:    { color:'#9aa4b0', shape:'invtri',   cn:'猪猪矿坑',    sym:'▼' },
+  temple:  { color:'#e8c060', shape:'diamond',  cn:'沙漠猪神殿',  sym:'◈' },
+  wreck:   { color:'#5aa0e0', shape:'pentagon', cn:'猪猪沉船',    sym:'⬟' },
+  belfry:  { color:'#c8b060', shape:'triangle', cn:'猪猪钟楼',    sym:'▲' },
+  windmill:{ color:'#d0a0e0', shape:'circle',   cn:'猪猪风车',    sym:'✳' },
+  grave:   { color:'#8a8f9a', shape:'square',   cn:'猪猪墓地',    sym:'▮' },
+  arena:   { color:'#e08a3c', shape:'circle',   cn:'猪猪竞技场',  sym:'◎' },
+  igloo:   { color:'#bfe0f5', shape:'pentagon', cn:'猪猪雪屋',    sym:'⬠' },
+  well:    { color:'#6fd0c0', shape:'square',   cn:'猪猪水井',    sym:'■' },
+};
+
+/* ---------- 状态 ---------- */
+const ZOOMS = [1,2,4,8,16,32,64];
+let zoomIdx = 2;                    // 默认 4 格 / 像素
+let px = ZOOMS[zoomIdx];            // 每个屏幕像素代表多少世界格
+let cx = 0, cz = 0;                 // 视野中心（世界格坐标）
+let altars = [];                    // altarSites() 的结果（由近到远）
+let spawn = null;                   // 由 spawnSpot() 在 applySeed 时算好，渲染只读
+let onlyMap = false;                // 只显示「宝箱可开出祭坛坐标」的遗迹
+
+const BASE_MAX = 480;               // 底图最长边采样数（固定，性能可控）
+const PREVIEW_MAX = 200;            // 拖拽过程中的预览分辨率
+
+/* 覆盖层（结构 / 洞穴宝箱）的工作量预算。
+   这两层都必须「逐格推算」才有结果，代价随视野面积（px²）增长：
+   实测洞穴部分约 0.27 ms / 96×96 格 —— 1600×900 的窗口在 px=64 时一屏要算约 69 万格，
+   单次就要好几分钟，而拖拽时每帧都会重算一次，浏览器必然假死。
+   这里给覆盖层一个固定采样预算，视野超出预算就等距跳格抽样：
+   算得少、界面不卡，计数按抽样率还原并标成「≈」提示是估算值。
+   抽样只决定「能看见多少标记」，不改变任何生成逻辑。 */
+const OV_CELL_BUDGET  = 1500;       // 洞穴格采样上限（最坏约 0.4 秒）
+const OV_CHUNK_BUDGET = 120000;     // 区块采样上限（约 20 毫秒）
+const OV_PREVIEW_DIV  = 4;          // 拖拽预览：预算再除以它，保证拖动跟手
+const OV_ALTAR_ONLY_PX = 8;         // 视野粗到 8 格/像素及以上：只渲染祭坛，其余标记一律不画
+const ALTAR_SCAN_BUDGET = 400000;   // 变异祭坛的独立预算：祭坛稀而重要，比结构宽松得多
+
+/* ---- 变异祭坛扫描专用的 structChunkInfo（带深度结果缓存）----
+   找变异祭坛必须逐个区块算 structChunkInfo，其中 98% 只花一次廉价哈希就返回，
+   真正贵的是那 2% 走到地形判定的区块（约 5 微秒）。这里只把那 2% 的结果记下来，
+   于是拖拽平移时只有新露出的一圈边条需要付费，来回拖动不会重复算。
+   缓存只在「廉价初筛通过」时才写入，条目数仅为访问区块数的 2%，不会涨爆内存。 */
+const structDeepCache = new Map();
+function structDeep(cx, cz) {
+  if (hash2(cx, cz, 901) >= STRUCT_P) return null;      // 98%：廉价初筛，不入缓存
+  const k = (cx + 1048576) * 2097152 + (cz + 1048576);
+  const hit = structDeepCache.get(k);
+  if (hit !== undefined) return hit;
+  const s = structChunkInfo(cx, cz) || null;
+  structDeepCache.set(k, s);
+  return s;
+}
+
+const stage   = document.getElementById('stage');
+const baseCv  = document.getElementById('base');
+const ovCv    = document.getElementById('overlay');
+const baseCtx = baseCv.getContext('2d');
+const ovCtx   = ovCv.getContext('2d');
+const busyEl  = document.getElementById('busy');
+const tipEl   = document.getElementById('tooltip');
+const seedInput = document.getElementById('seedInput');
+const mapCountEl = document.getElementById('mapCount');
+const caveCountEl = document.getElementById('caveCount');
+const caveMapCountEl = document.getElementById('caveMapCount');
+const ovNoteEl = document.getElementById('ovNote');
+
+/* 视野超出预算时的抽样步长：1 = 逐格精算，>1 = 等距跳格 */
+function ovStride(cols, rows, budget){
+  const n = Math.max(1, cols * rows);
+  return n <= budget ? 1 : Math.ceil(Math.sqrt(n / budget));
+}
+/* 抽样步长下的计数还原：按抽样率 s² 反推，并标「≈」提示是估算 */
+function fmtCount(n, s){
+  return s > 1 ? '≈' + Math.round(n * s * s) : String(n);
+}
+
+/* ---------- 视野换算 ---------- */
+function getView(){
+  const W = stage.clientWidth || 1, H = stage.clientHeight || 1;
+  return { W, H, x0: cx - W * px / 2, z0: cz - H * px / 2 };
+}
+function w2s(wx, wz, v){ return [ (wx - v.x0) / px, (wz - v.z0) / px ]; }
+function baseDims(maxSide){
+  const W = stage.clientWidth || 1, H = stage.clientHeight || 1;
+  if (W >= H) return { w: maxSide, h: Math.max(1, Math.round(maxSide * H / W)) };
+  return { w: Math.max(1, Math.round(maxSide * W / H)), h: maxSide };
+}
+
+/* ---------- 底图渲染（分块 + rAF，避免卡死界面） ---------- */
+function biomeColor(bi, h){
+  const c = BIOME_COLORS[bi] || [120,120,120];
+  let f;
+  if (h > SEA_LEVEL) f = 1 + Math.min(0.34, (h - SEA_LEVEL) * 0.006);   // 越高越亮
+  else               f = 1 - Math.min(0.32, (SEA_LEVEL - h) * 0.010);   // 越低越暗
+  return [ Math.min(255, c[0]*f)|0, Math.min(255, c[1]*f)|0, Math.min(255, c[2]*f)|0 ];
+}
+let genToken = 0;
+function renderBase(maxSide, useAsync){
+  const token = ++genToken;
+  const dim = baseDims(maxSide);
+  baseCv.width = dim.w; baseCv.height = dim.h;
+  const img  = baseCtx.createImageData(dim.w, dim.h);
+  const data = img.data;
+  const v = getView();
+  const stepX = (v.W * px) / dim.w, stepZ = (v.H * px) / dim.h;
+  const x0 = v.x0, z0 = v.z0;
+  const CHUNK = 24;
+  let row = 0;
+  if (useAsync) busyEl.classList.add('on');
+  function step(){
+    if (token !== genToken) return;                 // 已被更新的渲染请求取代
+    const end = Math.min(dim.h, row + CHUNK);
+    for (; row < end; row++){
+      const wz = z0 + (row + 0.5) * stepZ;
+      for (let i = 0; i < dim.w; i++){
+        const wx = x0 + (i + 0.5) * stepX;
+        const bi = biomeIndexAt(wx, wz);
+        const h  = heightAt(wx, wz);
+        const c  = biomeColor(bi, h);
+        const o  = (row * dim.w + i) * 4;
+        data[o] = c[0]; data[o+1] = c[1]; data[o+2] = c[2]; data[o+3] = 255;
+      }
+    }
+    if (row < dim.h){
+      if (useAsync) requestAnimationFrame(step); else step();
+    } else {
+      baseCtx.putImageData(img, 0, 0);
+      if (useAsync) busyEl.classList.remove('on');
+    }
+  }
+  if (useAsync) requestAnimationFrame(step); else step();
+}
+
+/* ---------- 标记层渲染（按显示分辨率） ---------- */
+function hexA(hex, a){
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n>>16)&255) + ',' + ((n>>8)&255) + ',' + (n&255) + ',' + a + ')';
+}
+function shapePath(ctx, shape, x, y, r){
+  ctx.beginPath();
+  switch (shape){
+    case 'square':
+      ctx.rect(x - r*0.82, y - r*0.82, r*1.64, r*1.64); break;
+    case 'triangle':
+      ctx.moveTo(x, y - r); ctx.lineTo(x + r*0.9, y + r*0.72); ctx.lineTo(x - r*0.9, y + r*0.72); ctx.closePath(); break;
+    case 'invtri':
+      ctx.moveTo(x, y + r); ctx.lineTo(x + r*0.9, y - r*0.72); ctx.lineTo(x - r*0.9, y - r*0.72); ctx.closePath(); break;
+    case 'diamond':
+      ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); break;
+    case 'pentagon':
+      for (let i = 0; i < 5; i++){
+        const a = -Math.PI/2 + i * 2*Math.PI/5;
+        const fx = x + Math.cos(a)*r, fy = y + Math.sin(a)*r;
+        i ? ctx.lineTo(fx, fy) : ctx.moveTo(fx, fy);
+      }
+      ctx.closePath(); break;
+    default:
+      ctx.arc(x, y, r, 0, Math.PI*2);
+  }
+}
+function starPath(ctx, x, y, r, inner){
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++){
+    const rad = (i % 2) ? inner : r;
+    const a = -Math.PI/2 + i * Math.PI/5;
+    const fx = x + Math.cos(a)*rad, fy = y + Math.sin(a)*rad;
+    i ? ctx.lineTo(fx, fy) : ctx.moveTo(fx, fy);
+  }
+  ctx.closePath();
+}
+function renderOverlay(preview){
+  const v = getView(), W = v.W, H = v.H;
+  const budgetDiv = preview ? OV_PREVIEW_DIV : 1;   // 拖拽中再压一档预算，保证跟手
+  const dpr = window.devicePixelRatio || 1;
+  ovCv.width = Math.round(W * dpr); ovCv.height = Math.round(H * dpr);
+  ovCv.style.width = W + 'px'; ovCv.style.height = H + 'px';
+  ovCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ovCtx.clearRect(0, 0, W, H);
+
+  // 视野范围内的区块（结构半径最大 26，向外多扫 2 个区块以覆盖探入视口的邻区结构）
+  // 视野过大时按 bStride 等距跳格抽样，把工作量压回预算内（见 OV_CHUNK_BUDGET 注释）
+  const halfW = W * px / 2, halfH = H * px / 2;
+  const bx0 = Math.floor((cx - halfW) / CS) - 2, bx1 = Math.floor((cx + halfW) / CS) + 2;
+  const bz0 = Math.floor((cz - halfH) / CS) - 2, bz1 = Math.floor((cz + halfH) / CS) + 2;
+  const bStride = ovStride(bx1 - bx0 + 1, bz1 - bz0 + 1, OV_CHUNK_BUDGET / budgetDiv);
+  /* 抽样格点锚定在「世界坐标」上，而不是以视口左上角 bx0/bz0 为起点。
+     否则一平移视口，被抽到的区块集合整体错位（同一区块时而被抽到、时而不被抽到），
+     稀疏标记（变异祭坛）就会「滑一下就没、再也回不来」。锚定之后被抽到的集合在
+     平移中恒定不变，视野过大时依旧是估算，但估算集合本身是稳定的。 */
+  const bxStart = Math.ceil(bx0 / bStride) * bStride;
+  const bzStart = Math.ceil(bz0 / bStride) * bStride;
+  /* 视野粗到 8 格/像素及以上时只渲染祭坛：遗迹/村庄/洞穴这些密标全部不画，
+     省下的预算整份让给下面的祭坛扫描，保证这个档位下视野内的变异祭坛一个不漏。 */
+  const altarOnly = px >= OV_ALTAR_ONLY_PX;
+
+  let mapCount = 0;
+  if (!altarOnly)
+  for (let bcx = bxStart; bcx <= bx1; bcx += bStride) for (let bcz = bzStart; bcz <= bz1; bcz += bStride){
+    const s = structChunkInfo(bcx, bcz);
+    if (!s) continue;
+    const mut = structMutates(s);                 // 0.1% 概率变异成特朗普祭坛
+    const hasMap = !mut && structHasAltarMap(s);  // 宝箱能开出特朗普祭坛坐标？
+    if (hasMap) mapCount++;
+    if (onlyMap && !hasMap) continue;
+    if (mut) continue;                            // 变异祭坛的星标由下面的祭坛扫描统一负责
+    const st = KIND_STYLE[s.kind.id] || { color:'#ffffff', shape:'circle' };
+    const rad = Math.max(7, Math.min(30, s.r / px));
+    const p = w2s(s.x, s.z, v);
+    ovCtx.lineWidth = 2;
+    ovCtx.strokeStyle = st.color;
+    ovCtx.fillStyle = hexA(st.color, 0.22);
+    shapePath(ovCtx, st.shape, p[0], p[1], rad);
+    ovCtx.fill(); ovCtx.stroke();
+    if (hasMap){                                   // ★ 虚线金环 + 徽标
+      ovCtx.save();
+      ovCtx.setLineDash([5, 4]);
+      ovCtx.lineWidth = 2.5;
+      ovCtx.strokeStyle = '#ffd54a';
+      ovCtx.beginPath();
+      ovCtx.arc(p[0], p[1], rad + 5, 0, Math.PI * 2);
+      ovCtx.stroke();
+      ovCtx.restore();
+      ovCtx.save();
+      ovCtx.font = 'bold 14px "Microsoft YaHei",sans-serif';
+      ovCtx.textAlign = 'center'; ovCtx.textBaseline = 'middle';
+      ovCtx.lineWidth = 3; ovCtx.strokeStyle = 'rgba(10,6,14,.9)';
+      ovCtx.strokeText('★', p[0] + rad + 6, p[1] - rad - 6);
+      ovCtx.fillStyle = '#ffd54a';
+      ovCtx.fillText('★', p[0] + rad + 6, p[1] - rad - 6);
+      ovCtx.restore();
+    }
+  }
+  mapCountEl.textContent = altarOnly ? '—' : fmtCount(mapCount, bStride);
+
+  /* 变异祭坛（地表遗迹 0.1% 变异而来）：渲染上与圈内祭坛完全同质，不做任何区分。
+     它必须逐区块算 structChunkInfo 才能发现，所以单独给一份更宽松的预算 ——
+     视野 ≥8 格/像素时密标全关，整份预算都归它，视野内的变异祭坛一个不漏；
+     再大才退化成等距抽样（格点锚定世界坐标，集合稳定，不会滑一下就没）。 */
+  const mutStars = [];
+  const aStride = ovStride(bx1 - bx0 + 1, bz1 - bz0 + 1, ALTAR_SCAN_BUDGET / budgetDiv);
+  const axStart = Math.ceil(bx0 / aStride) * aStride;
+  const azStart = Math.ceil(bz0 / aStride) * aStride;
+  for (let bcx = axStart; bcx <= bx1; bcx += aStride) for (let bcz = azStart; bcz <= bz1; bcz += aStride){
+    const s = structDeep(bcx, bcz);
+    if (s && structMutates(s)) mutStars.push(s);
+  }
+
+  // 地下洞穴宝箱：96×96 网格掷点 + 洞穴挖空结果逐点推算（浅蓝菱形；含坐标者金边 + 金圈）
+  // 洞穴逐格推算最贵（约 0.27 ms / 格），视野过大时按 cStride 等距跳格抽样
+  // ≥8 格/像素时只渲染祭坛：洞穴标记不算也不画，计数直接显示 —（预算整份让给祭坛扫描）
+  let caveTotal = 0, caveMap = 0, cStride = 1;
+  if (altarOnly){
+    caveCountEl.textContent = '—'; caveMapCountEl.textContent = '—';
+  } else {
+    const cgx0 = Math.floor((cx - halfW) / RUIN_CAVE_CELL), cgx1 = Math.floor((cx + halfW) / RUIN_CAVE_CELL);
+    const cgz0 = Math.floor((cz - halfH) / RUIN_CAVE_CELL), cgz1 = Math.floor((cz + halfH) / RUIN_CAVE_CELL);
+    cStride = ovStride(cgx1 - cgx0 + 1, cgz1 - cgz0 + 1, OV_CELL_BUDGET / budgetDiv);
+    const cgxStart = Math.ceil(cgx0 / cStride) * cStride;   // 洞穴网格同理锚定世界坐标，平移不再闪
+    const cgzStart = Math.ceil(cgz0 / cStride) * cStride;
+    for (let gx = cgxStart; gx <= cgx1; gx += cStride) for (let gz = cgzStart; gz <= cgz1; gz += cStride){
+      const spots = caveCellSpots(gx, gz);
+      if (!spots.length) continue;
+      for (const c of spots){
+        const p = w2s(c.x, c.z, v);
+        if (p[0] < -25 || p[1] < -25 || p[0] > W + 25 || p[1] > H + 25) continue;
+        caveTotal++;
+        if (c.map) caveMap++;
+        if (onlyMap && !c.map) continue;
+        ovCtx.save();
+        ovCtx.lineWidth = 1.6;
+        ovCtx.strokeStyle = c.map ? '#ffd54a' : '#8fd0ff';
+        ovCtx.fillStyle   = c.map ? 'rgba(255,213,74,.55)' : 'rgba(143,208,255,.32)';
+        shapePath(ovCtx, 'diamond', p[0], p[1], 5);
+        ovCtx.fill(); ovCtx.stroke();
+        if (c.map){
+          ovCtx.setLineDash([4, 3]);
+          ovCtx.lineWidth = 1.8;
+          ovCtx.strokeStyle = '#ffd54a';
+          ovCtx.beginPath();
+          ovCtx.arc(p[0], p[1], 9.5, 0, Math.PI * 2);
+          ovCtx.stroke();
+        }
+        ovCtx.restore();
+      }
+    }
+    caveCountEl.textContent = fmtCount(caveTotal, cStride);
+    caveMapCountEl.textContent = fmtCount(caveMap, cStride);
+  }
+
+  // 状态提示：≥8 格/像素只渲染祭坛；再粗（触发跳格）才额外告知计数为估算
+  if (altarOnly){
+    ovNoteEl.style.display = '';
+    ovNoteEl.textContent = '视野 ≥' + OV_ALTAR_ONLY_PX + ' 格/像素：只渲染祭坛' +
+      '（遗迹 / 村庄 / 洞穴标记已省略）' +
+      (aStride > 1 ? '；祭坛本身按 1/' + aStride + ' 抽样' : '；祭坛已逐区块精算');
+  } else if (Math.max(bStride, cStride) > 1){
+    ovNoteEl.style.display = '';
+    ovNoteEl.textContent = '视野过大：标记已按 1/' + Math.max(bStride, cStride) +
+      ' 等距抽样显示，计数为估算值（放大即恢复精确统计）';
+  } else {
+    ovNoteEl.style.display = 'none';
+  }
+
+  // 特朗普祭坛：大星形（种子固定的 3+7 座 + 地表遗迹 0.1% 变异而来的，两类完全同质、不区分）
+  const starList = mutStars.length ? altars.concat(mutStars) : altars;
+  for (let i = 0; i < starList.length; i++){
+    const a = starList[i];
+    const p = w2s(a.x, a.z, v);
+    if (p[0] > -80 && p[1] > -80 && p[0] < W + 80 && p[1] < H + 80){
+      ovCtx.save();
+      ovCtx.lineWidth = 2.5;
+      ovCtx.strokeStyle = '#ec407a';
+      ovCtx.fillStyle = '#f2d34a';
+      starPath(ovCtx, p[0], p[1], 15, 6.4);
+      ovCtx.fill(); ovCtx.stroke();
+      ovCtx.font = 'bold 13px "Microsoft YaHei",sans-serif';
+      ovCtx.textAlign = 'center'; ovCtx.textBaseline = 'top';
+      ovCtx.lineWidth = 3.5; ovCtx.strokeStyle = 'rgba(10,6,14,.9)';
+      ovCtx.strokeText('特朗普祭坛', p[0], p[1] + 18);
+      ovCtx.fillStyle = '#f2d34a';
+      ovCtx.fillText('特朗普祭坛', p[0], p[1] + 18);
+      ovCtx.restore();
+    }
+  }
+
+  // 出生点：位置由 spawnSpot() 按种子推算（不再硬画在原点），标注带上坐标
+  if (spawn){
+    const p = w2s(spawn.x, spawn.z, v);
+    if (p[0] > -40 && p[1] > -40 && p[0] < W + 40 && p[1] < H + 40){
+      ovCtx.save();
+      ovCtx.strokeStyle = '#ffffff'; ovCtx.lineWidth = 2;
+      ovCtx.beginPath();
+      ovCtx.moveTo(p[0] - 9, p[1]); ovCtx.lineTo(p[0] + 9, p[1]);
+      ovCtx.moveTo(p[0], p[1] - 9); ovCtx.lineTo(p[0], p[1] + 9);
+      ovCtx.stroke();
+      ovCtx.font = 'bold 12px "Microsoft YaHei",sans-serif';
+      ovCtx.textAlign = 'center'; ovCtx.textBaseline = 'top';
+      ovCtx.lineWidth = 3.5; ovCtx.strokeStyle = 'rgba(10,6,14,.9)';
+      ovCtx.strokeText('出生点 ' + spawn.x + ',' + spawn.z, p[0], p[1] + 12);
+      ovCtx.fillStyle = '#ffffff';
+      ovCtx.fillText('出生点 ' + spawn.x + ',' + spawn.z, p[0], p[1] + 12);
+      ovCtx.restore();
+    }
+  }
+
+  // 原点 (0,0)：只作参照的灰色小方框
+  {
+    const p = w2s(0, 0, v);
+    if (p[0] > -40 && p[1] > -40 && p[0] < W + 40 && p[1] < H + 40){
+      ovCtx.save();
+      ovCtx.strokeStyle = 'rgba(255,255,255,.55)'; ovCtx.lineWidth = 1.5;
+      ovCtx.strokeRect(p[0] - 4, p[1] - 4, 8, 8);
+      ovCtx.font = 'bold 11px "Microsoft YaHei",sans-serif';
+      ovCtx.textAlign = 'center'; ovCtx.textBaseline = 'top';
+      ovCtx.lineWidth = 3.5; ovCtx.strokeStyle = 'rgba(10,6,14,.9)';
+      ovCtx.strokeText('原点', p[0], p[1] + 8);
+      ovCtx.fillStyle = 'rgba(255,255,255,.8)';
+      ovCtx.fillText('原点', p[0], p[1] + 8);
+      ovCtx.restore();
+    }
+  }
+
+  // 视野中心十字
+  ovCtx.save();
+  ovCtx.strokeStyle = 'rgba(236,64,122,.75)'; ovCtx.lineWidth = 1;
+  ovCtx.beginPath();
+  ovCtx.moveTo(W/2 - 6, H/2); ovCtx.lineTo(W/2 + 6, H/2);
+  ovCtx.moveTo(W/2, H/2 - 6); ovCtx.lineTo(W/2, H/2 + 6);
+  ovCtx.stroke();
+  ovCtx.restore();
+}
+
+/* ---------- 鼠标信息 / 提示 ---------- */
+const roPos = document.getElementById('roPos');
+const roBiome = document.getElementById('roBiome');
+const roH = document.getElementById('roH');
+const roRiver = document.getElementById('roRiver');
+const roLand = document.getElementById('roLand');
+
+/* 鼠标附近的地下宝箱（±1 格），供悬停提示用 */
+function caveSpotAt(wx, wz){
+  const gx0 = Math.floor((wx - 1) / RUIN_CAVE_CELL), gx1 = Math.floor((wx + 1) / RUIN_CAVE_CELL);
+  const gz0 = Math.floor((wz - 1) / RUIN_CAVE_CELL), gz1 = Math.floor((wz + 1) / RUIN_CAVE_CELL);
+  for (let gx = gx0; gx <= gx1; gx++) for (let gz = gz0; gz <= gz1; gz++)
+    for (const c of caveCellSpots(gx, gz))
+      if (Math.abs(c.x - wx) <= 1 && Math.abs(c.z - wz) <= 1) return c;
+  return null;
+}
+function updateReadout(wx, wz, sx, sy){
+  const bi = biomeIndexAt(wx, wz);
+  const h  = heightAt(wx, wz);
+  const rv = riverAt(wx, wz);
+  const ln = landnessAt(wx, wz);
+  roPos.textContent = wx + ', ' + wz;
+  roBiome.textContent = BIOMES[bi].name;
+  roH.textContent = h + (h <= SEA_LEVEL ? '（水下）' : '');
+  roRiver.textContent = rv > 0 ? rv.toFixed(3) + '（河内）' : '0（陆地）';
+  roLand.textContent = ln.toFixed(3);
+
+  // 结构 / 祭坛提示
+  let text = null;
+  const s = ruinSiteAt(wx, wz);
+  const nearAltar = altars.find(a => Math.abs(wx - a.x) <= 12 && Math.abs(wz - a.z) <= 12);
+  if (s && structMutates(s)){
+    text = '★ 特朗普祭坛  @ ' + s.x + ', ' + s.z;
+  } else if (s){
+    const st = KIND_STYLE[s.kind.id];
+    text = st.cn + '  @ ' + s.x + ', ' + s.z
+         + (structHasAltarMap(s) ? '  ★ 宝箱可开出祭坛坐标' : '  无祭坛坐标');
+  } else if (nearAltar){
+    text = '★ 特朗普祭坛  @ ' + nearAltar.x + ', ' + nearAltar.z;
+  } else {
+    const c = caveSpotAt(wx, wz);
+    if (c) text = '◆ 地下洞穴宝箱  @ ' + c.x + ', ' + c.z + '（y ' + c.y + '）'
+                + (c.map ? '  ★ 可开出祭坛坐标' : '  无祭坛坐标');
+  }
+  if (text){
+    tipEl.textContent = text;
+    tipEl.style.display = 'block';
+    tipEl.style.left = sx + 'px';
+    tipEl.style.top  = sy + 'px';
+  } else {
+    tipEl.style.display = 'none';
+  }
+}
+function hideTip(){ tipEl.style.display = 'none'; }
+
+/* ---------- 交互 ---------- */
+let dragging = false, lastX = 0, lastY = 0;
+stage.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  stage.classList.add('grabbing');
+  e.preventDefault();
+});
+window.addEventListener('mousemove', e => {
+  const rect = stage.getBoundingClientRect();
+  if (dragging){
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (dx || dy){
+      cx -= dx * px; cz -= dy * px;
+      lastX = e.clientX; lastY = e.clientY;
+      renderBase(PREVIEW_MAX, false);          // 拖拽中用低分辨率预览
+      renderOverlay(true);                     // 覆盖层同样降档预算，避免拖动时卡顿
+    }
+  }
+  const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                 e.clientY >= rect.top  && e.clientY <= rect.bottom;
+  if (inside){
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const v = getView();
+    const wx = Math.round(v.x0 + sx * px), wz = Math.round(v.z0 + sy * px);
+    updateReadout(wx, wz, sx, sy);
+  } else {
+    hideTip();
+  }
+});
+window.addEventListener('mouseup', () => {
+  if (!dragging) return;
+  dragging = false;
+  stage.classList.remove('grabbing');
+  renderBase(BASE_MAX, true);                  // 松手后补一张高清底图
+  renderOverlay();                             // 覆盖层恢复全预算（拖拽时用的是降档预览）
+});
+stage.addEventListener('mouseleave', hideTip);
+
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = stage.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  setZoom(zoomIdx + (e.deltaY < 0 ? -1 : 1), sx, sy);
+}, { passive:false });
+
+function setZoom(idx, anchorSx, anchorSy){
+  idx = Math.max(0, Math.min(ZOOMS.length - 1, idx));
+  if (idx === zoomIdx) return;
+  const W = stage.clientWidth, H = stage.clientHeight;
+  if (anchorSx == null){ anchorSx = W / 2; anchorSy = H / 2; }
+  const v = getView();
+  const wx = v.x0 + anchorSx * px, wz = v.z0 + anchorSy * px;
+  zoomIdx = idx; px = ZOOMS[zoomIdx];
+  cx = wx - (anchorSx - W / 2) * px;
+  cz = wz - (anchorSy - H / 2) * px;
+  document.getElementById('zoomVal').textContent = px + ' 格 / 像素';
+  renderBase(BASE_MAX, true);
+  renderOverlay();
+}
+
+window.addEventListener('keydown', e => {
+  if (document.activeElement === seedInput) return;
+  const step = 40 * px;
+  let moved = true;
+  if (e.key === 'ArrowLeft')       cx -= step;
+  else if (e.key === 'ArrowRight') cx += step;
+  else if (e.key === 'ArrowUp')    cz -= step;
+  else if (e.key === 'ArrowDown')  cz += step;
+  else moved = false;
+  if (moved){
+    e.preventDefault();
+    renderBase(BASE_MAX, true);
+    renderOverlay();
+  }
+});
+
+document.getElementById('btnZoomIn').onclick  = () => setZoom(zoomIdx - 1);
+document.getElementById('btnZoomOut').onclick = () => setZoom(zoomIdx + 1);
+document.getElementById('btnReset').onclick = () => {
+  cx = 0; cz = 0;
+  renderBase(BASE_MAX, true);
+  renderOverlay();
+};
+/* 跳到出生点：出生点可能离原点几百格，默认视野不一定能一眼找到 */
+document.getElementById('btnGoSpawn').onclick = () => {
+  if(!spawn)return;
+  cx = spawn.x; cz = spawn.z;
+  renderBase(BASE_MAX, true);
+  renderOverlay();
+};
+
+/* ---------- 导出 PNG ---------- */
+document.getElementById('btnExport').onclick = () => {
+  const v = getView();
+  const W = Math.round(v.W), H = Math.round(v.H);
+  const out = document.createElement('canvas');
+  out.width = W; out.height = H;
+  const c = out.getContext('2d');
+  c.imageSmoothingEnabled = false;
+  c.fillStyle = '#0b0810'; c.fillRect(0, 0, W, H);
+  c.drawImage(baseCv, 0, 0, W, H);
+  c.drawImage(ovCv, 0, 0, ovCv.width, ovCv.height, 0, 0, W, H);
+  out.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = 'seed-viewer-' + worldSeed + '.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  });
+};
+
+/* ---------- 种子应用 ---------- */
+const seedMsgEl = document.getElementById('seedMsg');
+const seedNumEl = document.getElementById('seedNum');
+const altCountEl = document.getElementById('altCount');
+const altListEl  = document.getElementById('altList');
+const spawnPosEl  = document.getElementById('spawnPos');
+const spawnBiomeEl= document.getElementById('spawnBiome');
+const spawnDistEl = document.getElementById('spawnDist');
+
+function applySeed(){
+  const r = normalizeSeed(seedInput.value);       // 复用游戏内解析逻辑
+  seedMsgEl.textContent = r.msg;
+  seedMsgEl.className = 'msg ' + (r.ok ? 'ok' : 'err');
+  if (!r.ok) return;
+  worldSeed = r.seed;
+  biomeCache.clear();
+  caveCornerCache.clear();                        // 洞穴噪声与缓存都随种子失效
+  caveCellCache.clear();
+  structDeepCache.clear();                        // 变异祭坛的深度结果同样随种子失效
+  seedNumEl.textContent = r.seed;
+
+  // 特朗普祭坛：两圈各若干座，按到原点的距离由近到远列出（除此之外还有极少量遗迹变异祭坛）
+  altars = altarSites();
+  const altNearN = altars.filter(a => a.d <= ALTAR_NEAR_R).length;
+  altCountEl.textContent = altars.length + ' 座（近圈 ' + altNearN + ' · 远圈 ' + (altars.length - altNearN) + '）';
+  altListEl.textContent = '';
+  for (const a of altars){
+    const row = document.createElement('div'); row.className = 'kv';
+    const b = document.createElement('b'); b.textContent = a.x + ', ' + a.z;
+    const sp = document.createElement('span');
+    sp.textContent = Math.round(a.d) + ' 格 · ' + biomeNameAt(a.x, a.z);
+    row.appendChild(b); row.appendChild(sp);
+    altListEl.appendChild(row);
+  }
+
+  spawn = spawnSpot();                            // 出生点随种子重算（renderOverlay 只读不重算）
+  spawnPosEl.textContent   = spawn.x + ', ' + spawn.z + '（y ' + spawn.hy + '）';
+  spawnBiomeEl.textContent = biomeNameAt(spawn.x, spawn.z);
+  spawnDistEl.textContent  = Math.round(Math.hypot(spawn.x, spawn.z)) + ' 格';
+
+  cx = 0; cz = 0;
+  renderBase(BASE_MAX, true);
+  renderOverlay();
+}
+document.getElementById('btnGen').onclick = applySeed;
+document.getElementById('onlyMap').onchange = e => {
+  onlyMap = e.target.checked;
+  renderOverlay();
+};
+document.getElementById('btnRand').onclick = () => {
+  seedInput.value = '';
+  applySeed();
+};
+seedInput.addEventListener('keydown', e => { if (e.key === 'Enter') applySeed(); });
+
+/* ---------- 图例 ---------- */
+(function buildLegend(){
+  const box = document.getElementById('legend');
+  for (const k of STRUCT_KINDS){
+    const st = KIND_STYLE[k.id];
+    const d = document.createElement('div');
+    d.className = 'lg';
+    const i = document.createElement('i');
+    i.style.background = st.color;
+    i.style.clipPath = (st.shape === 'circle') ? 'circle(50%)'
+                     : (st.shape === 'diamond') ? 'polygon(50% 0,100% 50%,50% 100%,0 50%)'
+                     : (st.shape === 'triangle') ? 'polygon(50% 0,100% 100%,0 100%)'
+                     : (st.shape === 'invtri') ? 'polygon(0 0,100% 0,50% 100%)'
+                     : 'none';
+    const t = document.createElement('span');
+    t.textContent = st.sym + ' ' + st.cn;
+    d.appendChild(i); d.appendChild(t);
+    box.appendChild(d);
+  }
+})();
+
+/* ---------- 尺寸变化 ---------- */
+const ro = new ResizeObserver(() => {
+  renderBase(BASE_MAX, false);
+  renderOverlay();
+});
+ro.observe(stage);
+
+/* ---------- 启动 ---------- */
+/* 从游戏主界面「种子查看器」按钮跳过来时会带 ?seed=xxx：
+   覆盖输入框并直接用它渲染，省得玩家再手输一遍 */
+(function(){
+  let raw = '';
+  try { raw = (new URLSearchParams(location.search).get('seed') || '').trim(); } catch (e) {}
+  if (!raw) return;
+  seedInput.value = raw;
+})();
+applySeed();
+</script>
+</body>
+</html>
