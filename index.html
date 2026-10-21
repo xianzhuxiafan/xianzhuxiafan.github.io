@@ -3,30 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>仙猪工作室 · 作品与下载</title>
-<meta name="description" content="仙猪工作室作品集：仙猪世界像素沙盒游戏、仙猪浏览器、2D 种子查看器、MC下载器。全部免费，Windows / Android 双端可用。">
-<meta name="theme-color" content="#120c15">
+<title>仙猪下凡 · 轻量工具</title>
+<meta name="description" content="仙猪下凡：只做轻量、单文件、无广告的工具。仙猪浏览器桌面端 1.4 MB、安卓端 0.3 MB，MC下载器让 Minecraft 下载更省心。">
+<meta name="theme-color" content="#0a0913">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23f7a8c4'/%3E%3Crect x='4' y='6' width='2' height='2' fill='%232b1a24'/%3E%3Crect x='10' y='6' width='2' height='2' fill='%232b1a24'/%3E%3Crect x='6' y='10' width='4' height='2' fill='%23c2568a'/%3E%3C/svg%3E">
 <style>
   :root{
-    --bg:#120c15;
-    --bg2:#190f1c;
+    --bg:#0a0913;
+    --bg2:#100e1c;
     --panel:rgba(255,255,255,.035);
-    --panel-2:rgba(255,255,255,.06);
-    --line:rgba(255,255,255,.09);
-    --line-2:rgba(255,255,255,.16);
-    --text:#f6e9f1;
-    --sub:#b9a3b1;
-    --dim:#7f6c7b;
+    --panel2:rgba(255,255,255,.065);
+    --line:rgba(255,255,255,.085);
+    --line2:rgba(255,255,255,.16);
+    --text:#f5effa;
+    --sub:#aca3bf;
+    --dim:#79718d;
     --pink:#f7a8c4;
-    --pink-2:#ff86b0;
-    --pink-d:#c2568a;
+    --pink2:#ff86b0;
+    --pinkd:#c2568a;
     --gold:#ffd34e;
-    --clover:#8fce6b;
     --violet:#a882ff;
+    --sky:#7ea7ff;
+    --clover:#8fce6b;
     --radius:18px;
-    --max:1120px;
-    --tap:48px;
+    --max:1140px;
     --font:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
   }
   *{box-sizing:border-box}
@@ -36,167 +36,275 @@
     line-height:1.7;-webkit-font-smoothing:antialiased;overflow-x:hidden;
   }
   a{color:inherit;text-decoration:none}
-  img,svg{display:block}
-  .wrap{width:min(100% - 40px,var(--max));margin:0 auto}
+  svg{display:block}
+  .wrap{width:min(100% - 44px,var(--max));margin:0 auto}
 
-  /* ---------- 背景装饰 ---------- */
-  .bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-  .bg::before{
+  /* ==================== 天幕背景 ==================== */
+  .sky{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .sky::before{
     content:"";position:absolute;inset:0;
-    background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
-                     linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
-    background-size:64px 64px;
-    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 20%,transparent 78%);
-    -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 20%,transparent 78%);
+    background:
+      radial-gradient(2px 2px at 12% 18%,rgba(255,255,255,.55),transparent 100%),
+      radial-gradient(1px 1px at 26% 42%,rgba(255,255,255,.4),transparent 100%),
+      radial-gradient(2px 2px at 38% 12%,rgba(255,211,78,.55),transparent 100%),
+      radial-gradient(1px 1px at 54% 30%,rgba(255,255,255,.45),transparent 100%),
+      radial-gradient(2px 2px at 68% 16%,rgba(255,255,255,.5),transparent 100%),
+      radial-gradient(1px 1px at 79% 38%,rgba(247,168,196,.5),transparent 100%),
+      radial-gradient(2px 2px at 88% 10%,rgba(255,255,255,.4),transparent 100%),
+      radial-gradient(1px 1px at 94% 52%,rgba(255,255,255,.35),transparent 100%),
+      radial-gradient(1px 1px at 8% 66%,rgba(255,255,255,.3),transparent 100%),
+      radial-gradient(2px 2px at 45% 72%,rgba(255,211,78,.35),transparent 100%);
+    animation:twinkle 7s ease-in-out infinite alternate;
   }
-  .glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
-  .glow.p{width:520px;height:520px;left:-160px;top:-180px;background:rgba(194,86,138,.45)}
-  .glow.g{width:440px;height:440px;right:-120px;top:120px;background:rgba(255,211,78,.16)}
-  .glow.v{width:520px;height:520px;left:40%;top:640px;background:rgba(168,130,255,.14)}
+  @keyframes twinkle{from{opacity:.55}to{opacity:1}}
+  .sky::after{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:72px 72px;
+    mask-image:radial-gradient(ellipse 90% 55% at 50% 0%,#000 15%,transparent 80%);
+    -webkit-mask-image:radial-gradient(ellipse 90% 55% at 50% 0%,#000 15%,transparent 80%);
+  }
+  .glow{position:absolute;border-radius:50%;filter:blur(100px)}
+  .glow.a{width:560px;height:560px;left:-180px;top:-220px;background:rgba(194,86,138,.42)}
+  .glow.b{width:460px;height:460px;right:-140px;top:-60px;background:rgba(255,211,78,.13)}
+  .glow.c{width:600px;height:600px;left:34%;top:760px;background:rgba(126,167,255,.10)}
 
-  /* ---------- 导航 ---------- */
+  /* ==================== 导航 ==================== */
   .nav{
-    position:sticky;top:0;z-index:20;
-    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    background:rgba(18,12,21,.72);border-bottom:1px solid transparent;
-    transition:border-color .25s,background .25s;
+    position:sticky;top:0;z-index:30;
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    background:rgba(10,9,19,.7);border-bottom:1px solid transparent;
+    transition:background .25s,border-color .25s;
   }
-  .nav.on{border-bottom-color:var(--line);background:rgba(18,12,21,.92)}
-  .nav-in{display:flex;align-items:center;gap:26px;height:68px}
-  .brand{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:.5px;font-size:15.5px}
-  .brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,#2a1420,#1a0f18);border:1px solid var(--line-2);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.5)}
-  .brand .mark svg{width:22px;height:22px}
-  .nav-links{display:flex;align-items:center;gap:22px;margin-left:auto;font-size:14px;color:var(--sub)}
+  .nav.on{border-bottom-color:var(--line);background:rgba(10,9,19,.92)}
+  .nav-in{display:flex;align-items:center;gap:28px;height:70px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:16px;letter-spacing:1.5px}
+  .brand .mark{
+    width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(160deg,#2b1522,#18101f);border:1px solid var(--line2);
+    box-shadow:0 8px 20px rgba(0,0,0,.55);
+  }
+  .brand .mark svg{width:23px;height:23px}
+  .nav-links{display:flex;align-items:center;gap:24px;margin-left:auto;font-size:14px;color:var(--sub)}
   .nav-links a{transition:color .18s}
   .nav-links a:hover{color:var(--text)}
-  .nav-gh{
-    display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:999px;
-    border:1px solid var(--line-2);background:var(--panel);color:var(--text);font-size:13.5px;
+  .ghost-btn{
+    display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;
+    border:1px solid var(--line2);background:var(--panel);color:var(--text);font-size:13.5px;
     transition:background .18s,border-color .18s,transform .18s;
   }
-  .nav-gh:hover{background:var(--panel-2);border-color:rgba(247,168,196,.4);transform:translateY(-1px)}
-  .nav-gh svg{width:16px;height:16px;fill:currentColor}
+  .ghost-btn:hover{background:var(--panel2);border-color:rgba(247,168,196,.45);transform:translateY(-1px)}
+  .ghost-btn svg{width:16px;height:16px;fill:currentColor}
 
-  /* ---------- Hero ---------- */
-  header{position:relative;z-index:1;padding:92px 0 40px;text-align:center}
-  .hero-art{width:132px;margin:0 auto 26px;filter:drop-shadow(0 18px 42px rgba(194,86,138,.45));animation:float 6s ease-in-out infinite}
-  .hero-art svg{width:132px;height:132px}
-  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+  /* ==================== 首屏 ==================== */
+  header{position:relative;z-index:1;padding:70px 0 0}
+  .hero-grid{display:grid;grid-template-columns:1.12fr .88fr;gap:clamp(28px,5vw,60px);align-items:center;min-height:520px}
   .badge{
     display:inline-flex;align-items:center;gap:9px;padding:6px 15px;border-radius:999px;
-    border:1px solid var(--line-2);background:var(--panel);color:var(--sub);font-size:12.5px;letter-spacing:.6px;
+    border:1px solid var(--line2);background:var(--panel);color:var(--sub);
+    font-size:12.5px;letter-spacing:1px;
   }
-  .badge i{width:6px;height:6px;border-radius:50%;background:var(--clover);box-shadow:0 0 10px var(--clover)}
+  .badge i{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
   h1{
-    font-size:clamp(38px,7vw,66px);line-height:1.12;letter-spacing:2px;margin:22px 0 16px;font-weight:800;
+    font-size:clamp(46px,7.4vw,84px);line-height:1.05;letter-spacing:4px;
+    margin:24px 0 20px;font-weight:800;
   }
-  h1 em{
-    font-style:normal;
-    background:linear-gradient(100deg,#fff 8%,var(--pink) 46%,var(--gold) 92%);
+  h1 span{
+    background:linear-gradient(105deg,#fff 6%,var(--pink) 44%,var(--gold) 96%);
     -webkit-background-clip:text;background-clip:text;color:transparent;
   }
-  .lead{max-width:620px;margin:0 auto;color:var(--sub);font-size:clamp(14px,1.8vw,16.5px)}
-  .cta{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:36px}
+  .lead{max-width:540px;color:var(--sub);font-size:clamp(14.5px,1.7vw,16.5px);margin:0}
+  .lead b{color:var(--text);font-weight:600}
+  .cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:34px}
   .btn{
-    display:inline-flex;align-items:center;gap:10px;min-height:var(--tap);
-    padding:0 26px;border-radius:999px;font-size:14.5px;font-weight:600;
-    transition:transform .18s,box-shadow .18s,background .18s;
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;
+    padding:0 26px;border-radius:14px;font-size:14.5px;font-weight:600;
+    transition:transform .18s,box-shadow .18s,background .18s,border-color .18s;
   }
   .btn:hover{transform:translateY(-2px)}
-  .btn svg{width:18px;height:18px;flex:none}
-  .btn-primary{background:linear-gradient(135deg,var(--pink-2),var(--pink-d));color:#fff;box-shadow:0 14px 34px rgba(194,86,138,.4)}
-  .btn-primary:hover{box-shadow:0 18px 42px rgba(194,86,138,.55)}
-  .btn-ghost{background:var(--panel);border:1px solid var(--line-2);color:var(--text)}
-  .btn-ghost:hover{background:var(--panel-2);border-color:rgba(255,211,78,.4)}
+  .btn svg{width:19px;height:19px;flex:none}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--pink2),var(--pinkd));color:#fff;
+    box-shadow:0 14px 34px rgba(194,86,138,.4),inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .btn-primary:hover{box-shadow:0 18px 44px rgba(194,86,138,.55)}
+  .btn-ghost{background:var(--panel);border:1px solid var(--line2);color:var(--text)}
+  .btn-ghost:hover{background:var(--panel2);border-color:rgba(255,211,78,.45)}
   .hero-meta{margin-top:18px;color:var(--dim);font-size:12.5px;letter-spacing:.4px}
 
+  /* 像素猪舞台 */
+  .stage{
+    position:relative;display:grid;place-items:center;
+    aspect-ratio:1/1;max-width:420px;margin:0 auto;border-radius:26px;
+    border:1px solid var(--line);background:
+      radial-gradient(320px 260px at 50% 42%,rgba(247,168,196,.14),transparent 72%),
+      linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.01));
+    box-shadow:0 40px 90px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
+    overflow:hidden;
+  }
+  .stage::before{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:34px 34px;
+    mask-image:radial-gradient(circle at 50% 50%,#000 30%,transparent 76%);
+    -webkit-mask-image:radial-gradient(circle at 50% 50%,#000 30%,transparent 76%);
+  }
+  .pig{width:64%;max-width:250px;filter:drop-shadow(0 22px 40px rgba(194,86,138,.5));animation:float 6s ease-in-out infinite;position:relative;z-index:1}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .spark{position:absolute;width:10px;height:10px;background:var(--gold);opacity:.9}
+  .spark.k1{left:14%;top:20%}
+  .spark.k2{right:16%;top:32%;width:7px;height:7px;background:var(--pink)}
+  .spark.k3{right:22%;bottom:18%;width:6px;height:6px;background:var(--violet)}
+  .spark.k4{left:20%;bottom:26%;width:5px;height:5px;background:var(--sky)}
+  .cloud{
+    position:absolute;height:8px;background:rgba(255,255,255,.30);border-radius:2px;
+    box-shadow:0 -8px 0 rgba(255,255,255,.22),14px -8px 0 rgba(255,255,255,.18),28px 0 0 rgba(255,255,255,.24);
+    opacity:.6;animation:drift 9s ease-in-out infinite alternate;
+  }
+  .cloud.c1{left:8%;top:34%;width:30px}
+  .cloud.c2{right:6%;top:58%;width:24px;animation-delay:-3s;opacity:.42}
+  @keyframes drift{from{transform:translateX(0)}to{transform:translateX(14px)}}
+
   .stats{
-    display:flex;justify-content:center;flex-wrap:wrap;gap:clamp(28px,7vw,84px);
-    margin:58px auto 0;padding-top:30px;border-top:1px solid var(--line);max-width:760px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:18px;
+    margin-top:64px;padding:28px 0 34px;border-top:1px solid var(--line);
   }
-  .stat b{display:block;font-size:22px;font-weight:700;letter-spacing:.5px;color:var(--text)}
+  .stat b{display:block;font-size:24px;font-weight:700;letter-spacing:1px}
   .stat span{font-size:12.5px;color:var(--dim)}
+  .stat b i{font-style:normal;color:var(--pink);font-size:15px;font-weight:600;margin-left:3px}
 
-  /* ---------- 区块 ---------- */
-  section{position:relative;z-index:1;padding:90px 0}
-  .sec-head{text-align:center;margin-bottom:48px}
+  /* ==================== 通用区块 ==================== */
+  section{position:relative;z-index:1;padding:96px 0}
+  .sec-head{margin-bottom:46px;max-width:620px}
+  .sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
   .kicker{color:var(--gold);font-size:12px;letter-spacing:3px;font-weight:600;text-transform:uppercase}
-  .sec-head h2{font-size:clamp(26px,3.6vw,36px);letter-spacing:1.2px;margin:14px 0 10px}
+  .sec-head h2{font-size:clamp(28px,3.8vw,40px);letter-spacing:1.5px;margin:12px 0 12px;line-height:1.2}
   .sec-head p{color:var(--sub);font-size:14.5px;margin:0}
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
 
-  /* ---------- 作品卡片 ---------- */
-  .works{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
-  .work{
-    position:relative;display:flex;flex-direction:column;gap:16px;
-    padding:28px 26px;border-radius:var(--radius);border:1px solid var(--line);
-    background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.014));
-    transition:transform .22s,border-color .22s,background .22s,box-shadow .22s;overflow:hidden;
-  }
-  .work::after{
-    content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .25s;
-    background:radial-gradient(420px 220px at 20% 0%,var(--accent-glow),transparent 70%);pointer-events:none;
-  }
-  .work:hover{transform:translateY(-4px);border-color:var(--accent-line);box-shadow:0 24px 50px rgba(0,0,0,.35)}
-  .work:hover::after{opacity:1}
-  .work-top{display:flex;align-items:center;gap:13px;position:relative;z-index:1}
-  .work-ico{
-    width:46px;height:46px;border-radius:13px;display:grid;place-items:center;flex:none;
-    background:var(--accent-soft);border:1px solid var(--accent-line);
-  }
-  .work-ico svg{width:24px;height:24px}
-  .work-tag{font-size:11.5px;letter-spacing:2px;color:var(--accent-text);font-weight:600}
-  .work h3{font-size:19px;margin:2px 0 0;letter-spacing:.6px;position:relative;z-index:1}
-  .work p{color:var(--sub);font-size:13.8px;margin:0;position:relative;z-index:1;flex:1}
-  .work-go{
-    display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;color:var(--accent-text);
-    position:relative;z-index:1;transition:gap .2s;
-  }
-  .work:hover .work-go{gap:11px}
-  .work-go svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .work.pig{--accent-soft:rgba(247,168,196,.13);--accent-line:rgba(247,168,196,.32);--accent-text:#ffb8d0;--accent-glow:rgba(247,168,196,.10)}
-  .work.blue{--accent-soft:rgba(126,167,255,.13);--accent-line:rgba(126,167,255,.30);--accent-text:#9db9ff;--accent-glow:rgba(126,167,255,.10)}
-  .work.gold{--accent-soft:rgba(255,211,78,.12);--accent-line:rgba(255,211,78,.30);--accent-text:#ffdf82;--accent-glow:rgba(255,211,78,.09)}
-  .work.green{--accent-soft:rgba(143,206,107,.12);--accent-line:rgba(143,206,107,.30);--accent-text:#a9de8c;--accent-glow:rgba(143,206,107,.09)}
+  /* ==================== 浏览器展示 ==================== */
+  .showcase{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(26px,4vw,52px);align-items:center}
 
-  /* ---------- 下载 ---------- */
+  .mock{
+    border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:var(--bg2);
+    box-shadow:0 40px 90px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .mock-tabs{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;border-bottom:1px solid var(--line)}
+  .mock-tab{
+    display:flex;align-items:center;gap:8px;height:30px;padding:0 11px;border-radius:8px;
+    background:rgba(255,255,255,.07);font-size:11.5px;color:var(--text);white-space:nowrap;
+  }
+  .mock-tab.off{background:transparent;color:var(--dim)}
+  .mock-tab .dot{width:6px;height:6px;border-radius:50%;background:var(--clover);box-shadow:0 0 8px var(--clover);flex:none}
+  .mock-btn{
+    width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+    color:var(--dim);font-size:15px;margin-left:auto;flex:none;
+  }
+  .mock-bar{display:flex;align-items:center;gap:10px;height:48px;padding:0 12px;border-bottom:1px solid var(--line)}
+  .mock-nav{display:flex;gap:6px;color:var(--dim)}
+  .mock-nav svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .mock-url{
+    flex:1;display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:8px;
+    background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:11.5px;color:var(--sub);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .mock-url .lock{width:11px;height:11px;border:1.5px solid var(--clover);border-radius:2px;flex:none}
+  .mock-body{padding:26px 24px 22px;background:
+    radial-gradient(300px 200px at 20% 0%,rgba(247,168,196,.10),transparent 70%),
+    linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+  .mock-hi{font-size:17px;font-weight:700;letter-spacing:.8px;margin:0 0 6px}
+  .mock-sub{font-size:11.5px;color:var(--dim);margin:0 0 18px}
+  .mock-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .mock-card{
+    height:56px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);
+    display:grid;place-items:center;gap:5px;padding:6px 2px;
+  }
+  .mock-card i{width:16px;height:16px;border-radius:4px;display:block}
+  .mock-card em{font-style:normal;font-size:9px;color:var(--dim);letter-spacing:.2px}
+  .mock-card:nth-child(1) i{background:var(--pink)}
+  .mock-card:nth-child(2) i{background:var(--gold)}
+  .mock-card:nth-child(3) i{background:var(--sky)}
+  .mock-card:nth-child(4) i{background:var(--clover)}
+  .mock-strip{display:flex;align-items:center;gap:10px;margin-top:16px;padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+  .mock-strip b{font-size:10.5px;color:var(--text);font-weight:600}
+  .mock-strip span{font-size:9.5px;color:var(--dim);margin-left:auto}
+
+  .feat-title{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .feat-title .ico{
+    width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex:none;
+    background:rgba(126,167,255,.13);border:1px solid rgba(126,167,255,.30);
+  }
+  .feat-title .ico svg{width:22px;height:22px;stroke:#9db9ff;fill:none;stroke-width:1.8;stroke-linecap:round}
+  .feat-title h2{font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:1px}
+  .feat-lead{color:var(--sub);font-size:14px;margin:0 0 24px}
+  .feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .feat{
+    padding:16px 16px 15px;border-radius:12px;border:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
+    transition:border-color .2s,background .2s,transform .2s;
+  }
+  .feat:hover{border-color:rgba(247,168,196,.32);background:rgba(247,168,196,.06);transform:translateY(-2px)}
+  .feat b{display:block;font-size:13.5px;margin-bottom:4px;letter-spacing:.4px}
+  .feat span{font-size:12px;color:var(--dim);line-height:1.6;display:block}
+  .feat-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+
+  /* ==================== MC下载器 ==================== */
+  .mc-card{
+    display:grid;grid-template-columns:1.1fr .9fr;gap:clamp(26px,4vw,54px);align-items:center;
+    padding:clamp(26px,4vw,46px);border-radius:24px;border:1px solid var(--line);
+    background:
+      radial-gradient(600px 320px at 88% 20%,rgba(143,206,107,.10),transparent 70%),
+      linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+    box-shadow:0 30px 70px rgba(0,0,0,.3);
+  }
+  .mc-copy h2{font-size:clamp(26px,3.4vw,36px);letter-spacing:1px;margin:10px 0 10px}
+  .mc-copy > p{color:var(--sub);font-size:14px;margin:0 0 22px;max-width:520px}
+  .mc-list{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin:0 0 26px;padding:0;list-style:none}
+  .mc-list li{position:relative;padding-left:20px;font-size:12.8px;color:var(--sub);line-height:1.6}
+  .mc-list li::before{
+    content:"";position:absolute;left:0;top:.55em;width:8px;height:8px;
+    background:var(--clover);box-shadow:0 0 8px rgba(143,206,107,.6);
+  }
+  .mc-list b{color:var(--text);font-weight:600}
+  .mc-side{display:grid;place-items:center;position:relative}
+  .cube{width:min(78%,240px);filter:drop-shadow(0 26px 40px rgba(0,0,0,.5));animation:float 7s ease-in-out infinite}
+  .cube svg{width:100%;height:auto}
+
+  /* ==================== 下载 ==================== */
   .dl-box{
-    border:1px solid var(--line);border-radius:calc(var(--radius) + 4px);overflow:hidden;
+    border:1px solid var(--line);border-radius:20px;overflow:hidden;
     background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
   }
-  .dl-row{
-    display:flex;align-items:center;gap:18px;padding:20px 26px;border-bottom:1px solid var(--line);
-    flex-wrap:wrap;transition:background .18s;
-  }
+  .dl-row{display:flex;align-items:center;gap:18px;padding:21px 26px;border-bottom:1px solid var(--line);flex-wrap:wrap;transition:background .18s}
   .dl-row:last-child{border-bottom:0}
   .dl-row:hover{background:rgba(255,255,255,.025)}
-  .dl-ico{
-    width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex:none;
-    background:rgba(255,255,255,.05);border:1px solid var(--line);
-  }
+  .dl-ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.05);border:1px solid var(--line)}
   .dl-ico svg{width:21px;height:21px;stroke:var(--pink);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
   .dl-info{flex:1;min-width:190px}
   .dl-info b{display:block;font-size:15px;letter-spacing:.4px}
   .dl-info span{font-size:12.5px;color:var(--dim)}
   .dl-btn{
-    display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 19px;border-radius:999px;
-    font-size:13.5px;font-weight:600;border:1px solid var(--line-2);background:var(--panel);color:var(--text);
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 20px;
+    border-radius:10px;font-size:13.5px;font-weight:600;border:1px solid var(--line2);
+    background:var(--panel);color:var(--text);
     transition:background .18s,border-color .18s,transform .18s;
   }
   .dl-btn:hover{background:rgba(247,168,196,.14);border-color:rgba(247,168,196,.45);transform:translateY(-1px)}
   .dl-btn svg{width:15px;height:15px;fill:currentColor}
-  .note{margin-top:16px;text-align:center;color:var(--dim);font-size:12.5px}
+  .note{margin-top:16px;color:var(--dim);font-size:12.5px;text-align:center}
 
-  /* ---------- 关于 ---------- */
-  .about{
-    display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:stretch;
-  }
+  /* ==================== 关于 ==================== */
+  .about{display:grid;grid-template-columns:1.45fr 1fr;gap:20px}
   .about-card{
     border:1px solid var(--line);border-radius:var(--radius);padding:30px 28px;
     background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
   }
   .about-card h3{font-size:18px;margin:0 0 12px;letter-spacing:.6px}
   .about-card p{color:var(--sub);font-size:14px;margin:0 0 10px}
-  .about-card p:last-child{margin-bottom:0}
+  .about-card p:last-child{margin:0}
   .about-card a{color:var(--pink);border-bottom:1px dashed rgba(247,168,196,.55)}
   .about-card a:hover{border-bottom-style:solid}
   .links{display:flex;flex-direction:column;gap:10px}
@@ -205,52 +313,59 @@
     border:1px solid var(--line);background:var(--panel);font-size:13.5px;color:var(--sub);
     transition:border-color .18s,background .18s,color .18s;
   }
-  .link-row:hover{border-color:rgba(247,168,196,.4);background:var(--panel-2);color:var(--text)}
+  .link-row:hover{border-color:rgba(247,168,196,.42);background:var(--panel2);color:var(--text)}
   .link-row svg{width:17px;height:17px;flex:none;fill:currentColor;opacity:.8}
   .link-row span{margin-left:auto;color:var(--dim);font-size:12px}
 
-  footer{
-    position:relative;z-index:1;border-top:1px solid var(--line);padding:30px 0 44px;
-    color:var(--dim);font-size:12.5px;
-  }
-  .foot-in{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  footer{position:relative;z-index:1;border-top:1px solid var(--line);padding:30px 0 46px;color:var(--dim);font-size:12.5px}
+  .foot-in{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
   .foot-in a:hover{color:var(--text)}
 
-  /* ---------- 入场动画 ---------- */
-  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
-  .reveal.in{opacity:1;transform:none}
+  /* ==================== 响应式 ==================== */
+  @media (max-width:980px){
+    .hero-grid{grid-template-columns:1fr;min-height:0;gap:38px}
+    .stage{max-width:340px}
+    .showcase{grid-template-columns:1fr}
+    .mc-card{grid-template-columns:1fr}
+    .mc-side{order:-1}
+    .cube{width:170px}
+    .about{grid-template-columns:1fr}
+    section{padding:76px 0}
+    .sec-head{max-width:none}
+  }
+  @media (max-width:820px){
+    .nav-links a:not(.ghost-btn){display:none}
+    .stats{grid-template-columns:1fr 1fr;gap:22px;margin-top:48px}
+  }
+  @media (max-width:600px){
+    .wrap{width:calc(100% - 34px)}
+    header{padding-top:46px}
+    h1{letter-spacing:2px}
+    .cta{flex-direction:column}
+    .btn{width:100%}
+    .brand{letter-spacing:1px}
+    .brand span{font-size:15px}
+    .feat-grid{grid-template-columns:1fr}
+    .mc-list{grid-template-columns:1fr}
+    .dl-row{padding:18px}
+    .dl-btn{width:100%}
+    .mock-cards{grid-template-columns:repeat(2,1fr)}
+    .stage{max-width:280px}
+    .spark.k1,.spark.k2{display:none}
+  }
   @media (prefers-reduced-motion:reduce){
     .reveal{opacity:1;transform:none;transition:none}
-    .hero-art{animation:none}
+    .pig,.cube,.sky::before,.cloud{animation:none}
     html{scroll-behavior:auto}
-  }
-
-  /* ---------- 响应式 ---------- */
-  @media (max-width:860px){
-    .nav-links a:not(.nav-gh){display:none}
-    header{padding-top:64px}
-    .works{grid-template-columns:1fr}
-    .about{grid-template-columns:1fr}
-    section{padding:72px 0}
-  }
-  @media (max-width:560px){
-    .wrap{width:calc(100% - 32px)}
-    .brand span{display:none}
-    .nav-gh{padding:9px 12px;font-size:12.5px}
-    .cta{flex-direction:column;align-items:stretch}
-    .btn{justify-content:center}
-    .dl-row{padding:18px 18px}
-    .dl-btn{width:100%;justify-content:center}
-    .stats{gap:26px}
   }
 </style>
 </head>
 <body>
 
-<div class="bg" aria-hidden="true">
-  <div class="glow p"></div>
-  <div class="glow g"></div>
-  <div class="glow v"></div>
+<div class="sky" aria-hidden="true">
+  <div class="glow a"></div>
+  <div class="glow b"></div>
+  <div class="glow c"></div>
 </div>
 
 <nav class="nav" id="nav">
@@ -267,13 +382,14 @@
           <rect x="6" y="11" width="1" height="1" fill="#8e3a63"/><rect x="9" y="11" width="1" height="1" fill="#8e3a63"/>
         </svg>
       </span>
-      <span>仙猪工作室</span>
+      <span>仙猪下凡</span>
     </a>
     <div class="nav-links">
-      <a href="#works">作品</a>
+      <a href="#browser">浏览器</a>
+      <a href="#mc">MC下载器</a>
       <a href="#download">下载</a>
       <a href="#about">关于</a>
-      <a class="nav-gh" href="https://github.com/xianzhuxiafan" target="_blank" rel="noopener">
+      <a class="ghost-btn" href="https://github.com/xianzhuxiafan" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
         GitHub
       </a>
@@ -282,118 +398,167 @@
 </nav>
 
 <header>
-  <div class="wrap">
-    <div class="hero-art" aria-hidden="true">
-      <svg viewBox="0 0 16 16" shape-rendering="crispEdges">
-        <rect x="1" y="1" width="2" height="2" fill="#ffd34e"/><rect x="13" y="1" width="2" height="2" fill="#ffd34e"/>
-        <rect x="2" y="2" width="3" height="2" fill="#c2568a"/><rect x="11" y="2" width="3" height="2" fill="#c2568a"/>
-        <rect x="1" y="4" width="14" height="10" fill="#f7a8c4"/>
-        <rect x="2" y="4" width="12" height="1" fill="#ffd9e8"/>
-        <rect x="4" y="7" width="2" height="2" fill="#2b1a24"/><rect x="10" y="7" width="2" height="2" fill="#2b1a24"/>
-        <rect x="4" y="7" width="1" height="1" fill="#ffffff"/><rect x="10" y="7" width="1" height="1" fill="#ffffff"/>
-        <rect x="5" y="10" width="6" height="3" fill="#e77fa6"/>
-        <rect x="6" y="11" width="1" height="1" fill="#8e3a63"/><rect x="9" y="11" width="1" height="1" fill="#8e3a63"/>
-        <rect x="13" y="12" width="1" height="1" fill="#ffd34e"/>
-      </svg>
+  <div class="wrap hero-grid">
+    <div class="hero-copy reveal">
+      <div class="badge"><i></i>轻量工具 · 双端可用 · 全部免费</div>
+      <h1><span>仙猪下凡</span></h1>
+      <p class="lead">
+        只做轻得离谱的工具。一个 <b>1.4 MB</b> 的桌面浏览器、<b>0.3 MB</b> 的安卓包，
+        再加一个把 Minecraft 下载理顺的小工具 —— 没有账号，没有广告，打开即用。
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="./downloads/仙猪浏览器.exe" download>
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.6l3.3-3.3 1.4 1.4-5.7 5.7-5.7-5.7 1.4-1.4 3.3 3.3V3h2ZM4 19h16v2H4v-2Z"/></svg>
+          下载仙猪浏览器
+        </a>
+        <a class="btn btn-ghost" href="./tools/mcxzq.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5v-9Z"/><path d="M4 7.5 12 11l8-3.5M12 11v9"/></svg>
+          了解 MC下载器
+        </a>
+      </div>
+      <div class="hero-meta">Windows 10+ / Android 5.0+ · 免安装 · 不收集数据</div>
     </div>
 
-    <div class="badge"><i></i>独立作品 · 全部免费 · 双端可用</div>
-
-    <h1>把世界做成<em>像素猪</em>的样子</h1>
-    <p class="lead">
-      这里有会生成群系、遗迹和村庄的 2D 沙盒世界，也有 1.4 MB 的单文件浏览器，
-      还有几个顺手写的小工具。没有账号，没有广告，打开就能用。
-    </p>
-
-    <div class="cta">
-      <a class="btn btn-primary" href="./game/">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v1h2v10h-2v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1H2V7h2V6a2 2 0 0 1 2-2Zm1 5v3H5v2h2v3h2v-3h3v-2H9V9H7Zm9.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm-3 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg>
-        进入仙猪世界
-      </a>
-      <a class="btn btn-ghost" href="./downloads/仙猪浏览器.exe" download>
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.6l3.3-3.3 1.4 1.4-5.7 5.7-5.7-5.7 1.4-1.4 3.3 3.3V3h2ZM4 19h16v2H4v-2Z"/></svg>
-        下载浏览器 · 1.4 MB
-      </a>
+    <div class="hero-art reveal">
+      <div class="stage">
+        <span class="spark k1"></span><span class="spark k2"></span>
+        <span class="spark k3"></span><span class="spark k4"></span>
+        <span class="cloud c1"></span><span class="cloud c2"></span>
+        <svg class="pig" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-label="仙猪下凡像素猪头">
+          <rect x="1" y="1" width="2" height="2" fill="#ffd34e"/><rect x="13" y="1" width="2" height="2" fill="#ffd34e"/>
+          <rect x="2" y="2" width="3" height="2" fill="#c2568a"/><rect x="11" y="2" width="3" height="2" fill="#c2568a"/>
+          <rect x="1" y="4" width="14" height="10" fill="#f7a8c4"/>
+          <rect x="2" y="4" width="12" height="1" fill="#ffd9e8"/>
+          <rect x="4" y="7" width="2" height="2" fill="#2b1a24"/><rect x="10" y="7" width="2" height="2" fill="#2b1a24"/>
+          <rect x="4" y="7" width="1" height="1" fill="#ffffff"/><rect x="10" y="7" width="1" height="1" fill="#ffffff"/>
+          <rect x="5" y="10" width="6" height="3" fill="#e77fa6"/>
+          <rect x="6" y="11" width="1" height="1" fill="#8e3a63"/><rect x="9" y="11" width="1" height="1" fill="#8e3a63"/>
+          <rect x="13" y="12" width="1" height="1" fill="#ffd34e"/>
+        </svg>
+      </div>
     </div>
-    <div class="hero-meta">Windows 10+ / Android 5.0+ · 无需安装 · 无广告</div>
+  </div>
 
-    <div class="stats">
-      <div class="stat"><b>4</b><span>个作品</span></div>
-      <div class="stat"><b>1.4 MB</b><span>浏览器体积</span></div>
-      <div class="stat"><b>0.3 MB</b><span>安卓安装包</span></div>
-      <div class="stat"><b>100%</b><span>免费开源</span></div>
-    </div>
+  <div class="wrap stats reveal">
+    <div class="stat"><b>1.4<i>MB</i></b><span>桌面端单文件</span></div>
+    <div class="stat"><b>0.3<i>MB</i></b><span>安卓安装包</span></div>
+    <div class="stat"><b>2<i>个</i></b><span>在维护的工具</span></div>
+    <div class="stat"><b>0<i>广告</i></b><span>无账号 · 无追踪</span></div>
   </div>
 </header>
 
-<section id="works">
+<section id="browser">
   <div class="wrap">
     <div class="sec-head reveal">
-      <div class="kicker">Works</div>
-      <h2>四个作品，各做一件事</h2>
-      <p>游戏、浏览器、查看器、下载器 —— 都保持单文件、轻量、直接可用。</p>
+      <div class="kicker">Browser</div>
+      <h2>仙猪浏览器</h2>
+      <p>该有的都有，多余的不要。Windows 与 Android 一套界面，打开就能上网。</p>
     </div>
 
-    <div class="works">
-      <a class="work pig reveal" href="./game/">
-        <div class="work-top">
-          <span class="work-ico">
-            <svg viewBox="0 0 24 24" shape-rendering="crispEdges" aria-hidden="true">
-              <rect x="3" y="3" width="8" height="8" fill="#f7a8c4"/><rect x="13" y="3" width="8" height="8" fill="#ffd34e" opacity=".85"/>
-              <rect x="3" y="13" width="8" height="8" fill="#8fce6b" opacity=".85"/><rect x="13" y="13" width="8" height="8" fill="#a882ff" opacity=".85"/>
-            </svg>
-          </span>
-          <div><div class="work-tag">游戏</div><h3>仙猪世界</h3></div>
+    <div class="showcase">
+      <div class="mock reveal" aria-hidden="true">
+        <div class="mock-tabs">
+          <div class="mock-tab off">新标签页</div>
+          <div class="mock-tab"><span class="dot"></span>仙猪下凡</div>
+          <div class="mock-btn">+</div>
+          <div class="mock-btn">×</div>
         </div>
-        <p>2D 像素沙盒。几十种群系与遗迹、随机村庄路网、种子查看器，还能联机一起打特朗普大帝。</p>
-        <span class="work-go">进入世界 <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
-      </a>
+        <div class="mock-bar">
+          <div class="mock-nav">
+            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 13-3m3 9a8 8 0 0 1-13 3M4 4v5h5M20 20v-5h-5"/></svg>
+          </div>
+          <div class="mock-url"><span class="lock"></span>xianzhuxiafan.github.io</div>
+          <div class="mock-btn">⋮</div>
+        </div>
+        <div class="mock-body">
+          <p class="mock-hi">新标签页</p>
+          <p class="mock-sub">书签、历史记录与常用页面都在这里</p>
+          <div class="mock-cards">
+            <div class="mock-card"><i></i><em>书签</em></div>
+            <div class="mock-card"><i></i><em>历史</em></div>
+            <div class="mock-card"><i></i><em>下载</em></div>
+            <div class="mock-card"><i></i><em>设置</em></div>
+          </div>
+          <div class="mock-strip"><b>深色模式已开启</b><span>夜间更省眼</span></div>
+        </div>
+      </div>
 
-      <a class="work blue reveal" href="./browser/">
-        <div class="work-top">
-          <span class="work-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#9db9ff" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 8.5h18M6.5 6.2h.01M9 6.2h.01"/>
-            </svg>
+      <div class="reveal">
+        <div class="feat-title">
+          <span class="ico">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 8.5h18M6.5 6.2h.01M9 6.2h.01"/></svg>
           </span>
-          <div><div class="work-tag">浏览器</div><h3>仙猪浏览器</h3></div>
+          <h2>轻，但够用</h2>
         </div>
-        <p>1.4 MB 的桌面浏览器，安卓只有 0.3 MB。多标签、书签、历史、深色模式、查找缩放下载一应俱全。</p>
-        <span class="work-go">查看介绍 <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
-      </a>
+        <p class="feat-lead">桌面端是一个 1.4 MB 的 exe，安卓端只有 0.3 MB。功能都做在骨子里，不靠插件堆。</p>
+        <div class="feat-grid">
+          <div class="feat"><b>极致轻量</b><span>单文件免安装，双击即开，安装几乎瞬间完成。</span></div>
+          <div class="feat"><b>双端同款</b><span>Windows 与 Android 共用一套界面和交互。</span></div>
+          <div class="feat"><b>多标签浏览</b><span>标签条可横向滚动，窄屏自动精简工具栏。</span></div>
+          <div class="feat"><b>书签与历史</b><span>收藏、历史、下载记录都在本地，随时翻回。</span></div>
+          <div class="feat"><b>深色模式</b><span>白天黑夜两套配色，夜里看不刺眼。</span></div>
+          <div class="feat"><b>查找 · 缩放 · 下载</b><span>页内查找、页面缩放、下载管理全部内置。</span></div>
+        </div>
+        <div class="feat-links">
+          <a class="btn btn-ghost" href="./browser/">
+            查看完整介绍
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <a class="work gold reveal" href="./game/seed-viewer.html">
-        <div class="work-top">
-          <span class="work-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ffdf82" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2V6Z"/><path d="M9 4v14M15 6v14"/>
-            </svg>
-          </span>
-          <div><div class="work-tag">工具</div><h3>2D 种子查看器</h3></div>
+<section id="mc">
+  <div class="wrap">
+    <div class="mc-card reveal">
+      <div class="mc-copy">
+        <div class="kicker">Tool</div>
+        <h2>MC下载器</h2>
+        <p>PCL 的下载渠道关掉之后，官方源又常常慢到没法用。这个小工具把镜像、并发、续传和校验都接好了。</p>
+        <ul class="mc-list">
+          <li><b>多镜像测速</b>　下载前先测速，自动挑最快的源</li>
+          <li><b>分块并发</b>　大文件切块同时下，线程数可调</li>
+          <li><b>断点续传</b>　断了重开只补缺，完成的不重下</li>
+          <li><b>SHA1 校验</b>　下完核对完整性，避免坏包</li>
+          <li><b>运行器安装</b>　Fabric / Forge 等一键装好</li>
+          <li><b>配合 PCL</b>　放在同目录，下完启动器里可见</li>
+        </ul>
+        <div class="feat-links">
+          <a class="btn btn-primary" href="./downloads/MC下载器.exe" download>
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3v10.6l3.3-3.3 1.4 1.4-5.7 5.7-5.7-5.7 1.4-1.4 3.3 3.3V3h2ZM4 19h16v2H4v-2Z"/></svg>
+            下载 · 约 6 MB
+          </a>
+          <a class="btn btn-ghost" href="./tools/mcxzq.html">使用说明</a>
         </div>
-        <p>输入一个种子，直接看地形、群系、遗迹和宝箱的分布，判断出生点附近值不值得开一局。</p>
-        <span class="work-go">打开查看器 <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
-      </a>
+      </div>
 
-      <a class="work green reveal" href="./tools/mcxzq.html">
-        <div class="work-top">
-          <span class="work-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#a9de8c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5v-9Z"/><path d="M4 7.5 12 11l8-3.5M12 11v9"/>
-            </svg>
-          </span>
-          <div><div class="work-tag">工具</div><h3>MC下载器</h3></div>
+      <div class="mc-side" aria-hidden="true">
+        <div class="cube">
+          <svg viewBox="0 0 120 120" shape-rendering="crispEdges">
+            <polygon points="60,14 104,38 60,62 16,38" fill="#8fce6b"/>
+            <polygon points="16,38 60,62 60,110 16,86" fill="#8a6248"/>
+            <polygon points="104,38 60,62 60,110 104,86" fill="#6b4a3a"/>
+            <polygon points="60,14 104,38 60,62 16,38" fill="none" stroke="#a9de8c" stroke-width="1" opacity=".5"/>
+            <rect x="26" y="70" width="6" height="6" fill="#5d4334"/><rect x="40" y="86" width="6" height="6" fill="#5d4334"/>
+            <rect x="48" y="74" width="5" height="5" fill="#5d4334"/>
+            <rect x="74" y="72" width="6" height="6" fill="#4e3529"/><rect x="84" y="88" width="6" height="6" fill="#4e3529"/>
+            <rect x="70" y="94" width="5" height="5" fill="#4e3529"/>
+            <rect x="34" y="32" width="5" height="5" fill="#a9de8c" opacity=".7"/>
+            <rect x="72" y="26" width="5" height="5" fill="#a9de8c" opacity=".45"/>
+          </svg>
         </div>
-        <p>给 PCL 用的 Minecraft 下载小工具：多镜像测速、分块并发、断点续传、SHA1 校验，运行器一键装。</p>
-        <span class="work-go">了解用法 <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
-      </a>
+      </div>
     </div>
   </div>
 </section>
 
 <section id="download">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head center reveal">
       <div class="kicker">Downloads</div>
       <h2>直接下载</h2>
       <p>绿色免安装，下载后双击或安装即可使用。</p>
@@ -437,17 +602,17 @@
 
 <section id="about">
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head center reveal">
       <div class="kicker">About</div>
-      <h2>关于仙猪工作室</h2>
-      <p>一个人写的小项目，慢慢更新，持续修 bug。</p>
+      <h2>关于仙猪下凡</h2>
+      <p>名字来自那只像素猪 —— 它从天上下来，只带了两样东西。</p>
     </div>
 
     <div class="about">
       <div class="about-card reveal">
         <h3>为什么做这些</h3>
-        <p>喜欢像素游戏，也喜欢轻的东西。所以有了仙猪世界这个 2D 沙盒，和只有 1.4 MB 的仙猪浏览器。</p>
-        <p>所有作品都尽量保持单文件、零依赖：不用注册、不收集数据、不塞广告，下载下来就是完整的一份。</p>
+        <p>喜欢轻的东西。软件不该为了几个功能，先吃掉几百 MB 的内存和一堆权限。</p>
+        <p>所以这里的作品都尽量保持单文件、零依赖：不用注册、不收集数据、不塞广告，下载下来就是完整的一份。</p>
         <p>源码与更新都放在 <a href="https://github.com/xianzhuxiafan" target="_blank" rel="noopener">GitHub</a> 上，遇到问题可以直接提 issue。</p>
       </div>
       <div class="links reveal">
@@ -455,17 +620,9 @@
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
           GitHub 主页 <span>xianzhuxiafan</span>
         </a>
-        <a class="link-row" href="./game/">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h8v8H3V4Zm10 0h8v8h-8V4ZM3 14h8v6H3v-6Zm10 0h8v6h-8v-6Z"/></svg>
-          仙猪世界 <span>game/index.html</span>
-        </a>
         <a class="link-row" href="./browser/">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm1 4v12h14V7H5Z"/></svg>
-          仙猪浏览器 <span>browser/index.html</span>
-        </a>
-        <a class="link-row" href="./game/seed-viewer.html">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2V6Z"/></svg>
-          种子查看器 <span>game/seed-viewer.html</span>
+          仙猪浏览器 <span>browser/</span>
         </a>
         <a class="link-row" href="./tools/mcxzq.html">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5v-9Z"/></svg>
@@ -478,7 +635,7 @@
 
 <footer>
   <div class="wrap foot-in">
-    <span>© 2026 仙猪工作室 · 用像素和单文件堆出来的作品集</span>
+    <span>© 2026 仙猪下凡 · 轻量工具，从天而降</span>
     <span><a href="https://xianzhuxiafan.github.io/">xianzhuxiafan.github.io</a></span>
   </div>
 </footer>
@@ -486,7 +643,7 @@
 <script>
 (function(){
   var nav = document.getElementById('nav');
-  var onScroll = function(){ nav.classList.toggle('on', window.scrollY > 8); };
+  function onScroll(){ nav.classList.toggle('on', window.scrollY > 8); }
   window.addEventListener('scroll', onScroll, {passive:true});
   onScroll();
 
