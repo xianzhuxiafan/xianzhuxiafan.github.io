@@ -1,116 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MC下载器</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>页面已移动 · MC下载器</title>
+<meta http-equiv="refresh" content="0;url=tools/mcxzq.html">
+<script>location.replace('tools/mcxzq.html' + location.search + location.hash);</script>
 <style>
-  body {
-    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-    font-size: 15px;
-    line-height: 1.8;
-    color: #222;
-    background: #fff;
-    margin: 0;
-    padding: 40px 20px 60px;
-  }
-  .page {
-    max-width: 680px;
-    margin: 0 auto;
-  }
-  h1 {
-    font-size: 24px;
-    font-weight: normal;
-    margin: 0 0 6px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #ddd;
-  }
-  h2 {
-    font-size: 17px;
-    font-weight: bold;
-    margin: 32px 0 10px;
-  }
-  p, li { margin: 8px 0; }
-  ul, ol { padding-left: 24px; }
-  a { color: #0645ad; }
-  a:hover { text-decoration: none; }
-  .dl {
-    margin: 24px 0;
-    padding: 16px 0;
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-  }
-  .dl a {
-    font-size: 17px;
-    font-weight: bold;
-  }
-  .dl .meta { color: #777; font-size: 13px; }
-  code {
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 13px;
-    background: #f4f4f4;
-    padding: 1px 4px;
-  }
-  .foot {
-    margin-top: 40px;
-    padding-top: 14px;
-    border-top: 1px solid #ddd;
-    color: #777;
-    font-size: 12px;
-  }
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#fff;color:#222;
+       font:14px/1.7 "Microsoft YaHei","PingFang SC",sans-serif;text-align:center;padding:24px}
+  a{color:#0645ad}
 </style>
 </head>
 <body>
-<div class="page">
-
-  <h1>MC下载器</h1>
-  <p>版本 v1.0。一个用来下载 Minecraft 游戏文件的 Windows 小工具，单个 exe，不用安装。</p>
-
-  <div class="dl">
-    <a href="MC下载器.exe" download>下载 MC下载器.exe</a>
-    <div class="meta">约 6 MB / Windows 7 及以上 / 与 PCL 启动器配套使用</div>
+  <div>
+    <p>MC下载器页面已移动到 tools/ 目录。</p>
+    <p><a href="tools/mcxzq.html">继续前往</a></p>
   </div>
-
-  <h2>为什么做这个</h2>
-  <p>PCL 新版关掉了自带的下载渠道，官方源在国内又经常慢得没法用。这个工具把几个镜像源都接上了，下载前先测个速，挑最快的那个下。</p>
-  <p>另外大文件会切成几块同时下，断了能接着传，下完校验 SHA1。装 Fabric、Quilt、Forge、NeoForge 这些运行器也不用再单独跑安装器，选好版本点一下就行。</p>
-
-  <h2>怎么用</h2>
-  <ol>
-    <li>把 <code>MC下载器.exe</code> 放到 PCL 启动器所在的文件夹里，跟 <code>Plain Craft Launcher.exe</code> 放一起。</li>
-    <li>双击打开。游戏目录默认就是同目录下的 <code>.minecraft</code>，一般不用改。</li>
-    <li>点右上角的「获取版本列表」，等它加载完。</li>
-    <li>在左边列表里挑一个版本。想装模组加载器的话，右边「运行器」里选一个，版本列表会自动跟着你选的游戏版本变。</li>
-    <li>点「开始下载」。下载过程中可以暂停，也可以取消。</li>
-    <li>下完了打开 PCL，版本列表里就能看到，直接启动。</li>
-  </ol>
-
-  <h2>设置</h2>
-  <p>界面上留了几个参数，一般不用动：</p>
-  <ul>
-    <li><b>并发线程数</b>：默认 32。网好可以往上调，网差就调小一点。</li>
-    <li><b>超时</b>：单个连接等多久算超时，默认 30 秒。</li>
-    <li><b>重试次数</b>：一个文件下失败了重试几次，默认 3 次。</li>
-    <li><b>限速</b>：单位 KB/s，填 0 就是不限速。</li>
-    <li><b>显示快照与远古版</b>：勾上以后列表里才能看到快照版和老版本的 Alpha/Beta。</li>
-  </ul>
-  <p>配置存在同目录的 <code>MCDL-Settings.ini</code> 里。想恢复默认，把这个文件删掉或者点界面上的「恢复默认」都行。</p>
-
-  <h2>常见情况</h2>
-  <ul>
-    <li><b>下得很慢</b>：点一下「测速」重新选源，或者把线程数调大。</li>
-    <li><b>中途失败了</b>：换一个源再点「开始下载」，已经下好的文件会跳过，只补缺的。</li>
-    <li><b>下完 PCL 里看不到</b>：确认游戏目录选的是 PCL 用的那个 <code>.minecraft</code>，不是别的地方。</li>
-    <li><b>同名版本</b>：默认会建一个独立的隔离目录，不会覆盖你已有版本。</li>
-  </ul>
-
-  <h2>说明</h2>
-  <p>本工具与 PCL 启动器原作者龙腾猫跃无任何关联，是一个独立写的第三方下载辅助程序，只负责下载官方的游戏文件和运行器，不包含也不修改 PCL 的任何代码。</p>
-
-  <div class="foot">
-    MC下载器 v1.0
-  </div>
-
-</div>
 </body>
 </html>
